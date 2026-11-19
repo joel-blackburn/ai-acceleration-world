@@ -1,0 +1,1019 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>AI Acceleration Program</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* ---- Palette: swap these for exact brand hex codes ---- */
+    --navy:#061a2e; --deep:#0b2a45; --teal:#00a3ad; --aqua:#5fd4d0;
+    --green:#6cc24a; --amber:#ffb547; --coral:#ff7a6b; --ink:#eaf6f7; --muted:#9fb9c6;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;overflow:hidden;background:var(--navy);color:var(--ink);font-family:Inter,system-ui,sans-serif}
+  canvas#gl{position:fixed;inset:0;width:100%;height:100%;display:block;outline:none}
+
+  .brandbar{position:fixed;top:22px;left:26px;z-index:5;display:flex;align-items:center;gap:12px;pointer-events:none}
+  .brandbar .mark{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,var(--teal),var(--green));box-shadow:0 0 22px rgba(0,163,173,.5)}
+  .brandbar b{font-weight:700;letter-spacing:.02em;font-size:15px}
+  .brandbar span{display:block;font-size:12px;color:var(--muted);letter-spacing:.04em}
+
+  .disclaimer{position:fixed;top:24px;right:26px;z-index:5;font-size:12px;color:var(--muted);background:rgba(6,26,46,.55);border:1px solid rgba(95,212,208,.25);padding:7px 12px;border-radius:999px;backdrop-filter:blur(6px)}
+
+  /* ---- Content panel ---- */
+  .panel{position:fixed;right:26px;top:72px;bottom:104px;width:min(470px,40vw);z-index:6;display:flex;flex-direction:column;
+    background:linear-gradient(160deg,rgba(11,42,69,.86),rgba(6,26,46,.9));border:1px solid rgba(95,212,208,.28);border-radius:18px;
+    box-shadow:0 20px 60px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.06);backdrop-filter:blur(10px);
+    padding:28px 30px;overflow:auto;transition:opacity .6s ease,transform .6s ease}
+  .panel.hidden{opacity:0;transform:translateX(30px);pointer-events:none}
+  .panel.out{opacity:0;transform:translateY(14px)}
+  .kicker{font-size:12px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--aqua);display:flex;gap:10px;align-items:center}
+  .kicker i{font-style:normal;background:var(--teal);color:#032;padding:3px 8px;border-radius:6px;letter-spacing:.06em}
+  .panel h2{font-size:clamp(22px,2.2vw,31px);line-height:1.15;font-weight:800;margin:12px 0 12px;letter-spacing:-.01em}
+  .lede{font-size:clamp(14px,1.05vw,16px);line-height:1.55;color:#cfe3e8;margin-bottom:16px}
+  .panel ul{list-style:none;display:flex;flex-direction:column;gap:9px;margin-bottom:14px}
+  .panel li{font-size:clamp(13px,.98vw,15px);line-height:1.45;padding-left:22px;position:relative;color:#e2f0f2}
+  .panel li::before{content:"";position:absolute;left:3px;top:.55em;width:8px;height:8px;border-radius:2px;background:var(--teal);transform:rotate(45deg)}
+  .panel li b{color:#fff}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+  .card{border:1px solid rgba(95,212,208,.22);border-radius:12px;padding:12px 14px;background:rgba(0,163,173,.06)}
+  .card h4{font-size:12px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;color:var(--aqua)}
+  .card.neg{background:rgba(255,122,107,.06);border-color:rgba(255,122,107,.3)}
+  .card.neg h4{color:var(--coral)}
+  .card ul{margin:0;gap:6px}.card li{font-size:13px}
+  .card.neg li::before{background:var(--coral)}
+  .callout{margin-top:auto;border-left:3px solid var(--amber);padding:10px 14px;background:rgba(255,181,71,.08);border-radius:0 10px 10px 0;font-size:14px;line-height:1.5;color:#fbe9cf}
+  .stages{display:flex;flex-direction:column;gap:8px;margin-bottom:14px}
+  .stage{display:grid;grid-template-columns:34px 1fr;gap:10px;align-items:start}
+  .stage .n{font-weight:800;font-size:13px;color:#032;background:var(--aqua);border-radius:7px;text-align:center;padding:5px 0}
+  .stage p{font-size:13.5px;line-height:1.4;color:#d9ecef}.stage p b{color:#fff}
+  .bars{display:flex;flex-direction:column;gap:6px;margin:6px 0 14px}
+  .bar{display:grid;grid-template-columns:170px 1fr 38px;gap:10px;align-items:center;font-size:13px;color:#d9ecef}
+  .bar .t{height:9px;border-radius:5px;background:rgba(255,255,255,.08);overflow:hidden}
+  .bar .t span{display:block;height:100%;border-radius:5px;background:linear-gradient(90deg,var(--teal),var(--green));width:0;transition:width 1.2s cubic-bezier(.2,.8,.2,1)}
+  .bar .t span.f{background:linear-gradient(90deg,#3f8fd6,var(--aqua))}
+  .legend{font-size:12px;color:var(--muted);margin-top:-6px;margin-bottom:12px}
+  .legend em{font-style:normal;display:inline-block;width:10px;height:10px;border-radius:3px;margin:0 5px -1px 10px}
+  .phases{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+  .phase{border:1px solid rgba(95,212,208,.22);border-radius:12px;padding:10px 11px;background:rgba(0,163,173,.06)}
+  .phase small{display:block;font-size:11px;color:var(--aqua);letter-spacing:.08em;text-transform:uppercase;font-weight:700}
+  .phase b{display:block;font-size:15px;margin:2px 0 6px}
+  .phase div{font-size:12px;line-height:1.4;color:#cfe3e8}
+  .asks{counter-reset:a;display:flex;flex-direction:column;gap:9px;margin-bottom:14px}
+  .ask{display:grid;grid-template-columns:30px 1fr;gap:10px;font-size:14px;line-height:1.4;color:#e8f3f4}
+  .ask::before{counter-increment:a;content:counter(a);font-weight:800;color:#2a1800;background:var(--amber);border-radius:50%;width:26px;height:26px;display:grid;place-items:center;font-size:13px}
+  .hint{font-size:11.5px;color:var(--muted);margin-top:12px}
+
+  /* ---- Navigation ---- */
+  .nav{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:7;display:flex;align-items:center;gap:12px;
+    background:rgba(6,26,46,.72);border:1px solid rgba(95,212,208,.25);border-radius:999px;padding:8px 10px;backdrop-filter:blur(8px)}
+  .nav button{font:inherit;color:var(--ink);background:transparent;border:0;cursor:pointer}
+  .nav .arrow{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:rgba(0,163,173,.18);font-size:18px;transition:background .2s}
+  .nav .arrow:hover{background:rgba(0,163,173,.45)}
+  .nav .arrow:disabled{opacity:.3;cursor:default}
+  .dots{display:flex;gap:6px}
+  .dot{position:relative;width:34px;height:34px;border-radius:50%;font-size:12px!important;font-weight:700!important;color:var(--muted)!important;border:1px solid rgba(95,212,208,.25)!important;transition:all .25s}
+  .dot.on{background:var(--teal)!important;color:#032!important;border-color:var(--teal)!important;box-shadow:0 0 16px rgba(0,163,173,.7)}
+  .dot.seen:not(.on){color:var(--ink)!important;border-color:rgba(95,212,208,.6)!important}
+  .dot .tip{position:absolute;bottom:46px;left:50%;transform:translateX(-50%);white-space:nowrap;background:var(--deep);border:1px solid rgba(95,212,208,.3);padding:5px 9px;border-radius:7px;font-size:12px;font-weight:500;color:var(--ink);opacity:0;pointer-events:none;transition:opacity .2s}
+  .dot:hover .tip{opacity:1}
+  .tools{display:flex;gap:4px;padding-left:6px;border-left:1px solid rgba(95,212,208,.2)}
+  .tools button{font-size:12px;color:var(--muted);padding:8px 10px;border-radius:999px}
+  .tools button:hover{color:var(--ink);background:rgba(255,255,255,.06)}
+
+  /* ---- Title screen ---- */
+  .intro{position:fixed;inset:0;z-index:10;display:grid;place-items:center;background:radial-gradient(ellipse at center,rgba(6,26,46,.25),rgba(6,26,46,.85) 70%);transition:opacity 1.2s ease}
+  .intro.gone{opacity:0;pointer-events:none}
+  .intro .box{text-align:center;max-width:760px;padding:0 24px}
+  .intro .eyebrow{font-size:13px;letter-spacing:.3em;text-transform:uppercase;color:var(--aqua);font-weight:700}
+  .intro h1{font-size:clamp(38px,6vw,76px);font-weight:800;letter-spacing:-.02em;line-height:1.02;margin:16px 0 18px;
+    background:linear-gradient(120deg,#fff 20%,var(--aqua) 60%,var(--green));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .intro p{font-size:clamp(15px,1.4vw,19px);color:#cfe3e8;line-height:1.55}
+  .intro .go{margin-top:34px;font:inherit;font-weight:700;font-size:16px;color:#032;background:linear-gradient(120deg,var(--aqua),var(--green));border:0;border-radius:999px;padding:15px 34px;cursor:pointer;box-shadow:0 10px 40px rgba(0,163,173,.45);transition:transform .2s}
+  .intro .go:hover{transform:translateY(-2px)}
+  .intro .keys{margin-top:18px;font-size:12.5px;color:var(--muted)}
+  kbd{font-family:inherit;font-size:11px;border:1px solid rgba(159,185,198,.5);border-bottom-width:2px;border-radius:4px;padding:1px 6px;margin:0 2px}
+
+  .loading{position:fixed;inset:0;z-index:20;display:grid;place-items:center;background:var(--navy);font-size:14px;color:var(--muted);letter-spacing:.1em;transition:opacity .8s}
+  .loading.gone{opacity:0;pointer-events:none}
+  .err{display:none;position:fixed;inset:0;z-index:30;place-items:center;background:var(--navy);text-align:center;padding:30px;color:#cfe3e8}
+
+  .startrow{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+  .intro .go.alt{background:transparent;color:var(--ink);border:1px solid rgba(95,212,208,.6);box-shadow:none}
+  .tools select{font:inherit;font-size:12px;color:var(--ink);background:var(--deep);border:1px solid rgba(95,212,208,.3);border-radius:999px;padding:6px 8px;max-width:150px;display:none}
+  .tools select.on{display:block}
+  #tNarr.on{color:#032;background:var(--aqua)}
+  .caption{position:fixed;left:50%;bottom:92px;transform:translateX(-50%);z-index:7;max-width:min(860px,80vw);text-align:center;font-size:clamp(15px,1.25vw,19px);line-height:1.45;
+    color:#fff;background:rgba(3,14,26,.78);border-radius:12px;padding:10px 18px;opacity:0;transition:opacity .35s;pointer-events:none}
+  .caption.on{opacity:1}
+  .wide-panel .caption{left:calc((100vw - min(470px,40vw) - 26px)/2)}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+  .chips span{font-size:12px;border:1px solid rgba(95,212,208,.35);background:rgba(0,163,173,.08);border-radius:999px;padding:4px 10px;color:#d9ecef}
+  .flow{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:12px;font-size:12px}
+  .flow b{background:rgba(255,181,71,.12);border:1px solid rgba(255,181,71,.45);color:#fbe9cf;border-radius:8px;padding:5px 9px;font-weight:600}
+  .flow b.g{background:rgba(108,194,74,.12);border-color:rgba(108,194,74,.5);color:#dff5d3}
+  .flow b.a{background:rgba(95,212,208,.1);border-color:rgba(95,212,208,.5);color:#d9f6f5}
+  .flow i{color:var(--muted);font-style:normal}
+  @media (max-width:820px){
+    .panel{left:12px;right:12px;width:auto;top:auto;bottom:86px;max-height:46vh;padding:18px 18px}
+    .disclaimer{display:none}
+    .dot{width:28px;height:28px}
+    .tools{display:none}
+    .bar{grid-template-columns:120px 1fr 34px}
+  }
+</style>
+</head>
+<body>
+<canvas id="gl" tabindex="0"></canvas>
+<div class="loading" id="loading">BUILDING THE WORLD…</div>
+<div class="err" id="err"><div><h2 style="margin-bottom:10px">The 3D view couldn't start</h2><p>This presentation needs WebGL and an internet connection to load its 3D library. Try a current version of Chrome or Edge.</p></div></div>
+
+<div class="brandbar"><div class="mark"></div><div><b>AI Acceleration Program</b><span>Executive proposal</span></div></div>
+<div class="disclaimer">For discussion · nothing shown is approved</div>
+
+<div class="intro" id="intro">
+  <div class="box">
+    <div class="eyebrow">Executive proposal</div>
+    <h1>AI Acceleration Program</h1>
+    <p>Turning AI opportunities into measurable, evidence-based investment.<br>A short journey through how it would work, and what we're asking for.</p>
+    <div class="startrow"><button class="go" id="go">Begin the journey →</button><button class="go alt" id="goNarr">Begin with narration 🔊</button></div>
+    <div class="keys">Navigate with <kbd>←</kbd> <kbd>→</kbd> or <kbd>Space</kbd> · <kbd>1</kbd>–<kbd>9</kbd> jump · <kbd>N</kbd> narration · <kbd>H</kbd> hide panel · <kbd>F</kbd> full screen</div>
+  </div>
+</div>
+
+<aside class="panel hidden" id="panel"></aside>
+<div class="caption" id="caption"></div>
+
+<nav class="nav" id="nav">
+  <button class="arrow" id="prev" aria-label="Previous stop">←</button>
+  <div class="dots" id="dots"></div>
+  <button class="arrow" id="next" aria-label="Next stop">→</button>
+  <div class="tools">
+    <button id="tNarr" title="Narration on or off (N)">🔇 Narration</button>
+    <select id="voice" title="Narration voice" aria-label="Narration voice"></select>
+    <button id="tPanel" title="Hide or show the panel (H)">Panel</button>
+    <button id="tFull" title="Full screen (F)">Full screen</button>
+  </div>
+</nav>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
+<script>
+(async function(){
+if(!window.THREE){document.getElementById('err').style.display='grid';return;}
+try{ await document.fonts.load('700 40px Inter'); await document.fonts.ready; }catch(e){}
+
+/* =====================================================================
+   CONTENT: de-identified, roles only, no organisation or person names
+   ===================================================================== */
+const STOPS = [
+ { key:'proposition', short:'The proposition', kicker:'The proposition',
+   title:'Turning existing AI investment into measurable value',
+   say:`Welcome. We already have AI tools across the organisation, but adoption is low. This program builds the environment, the mindset and the capability for departments to explore AI on real business problems, prove the benefit, and use that evidence to guide further investment. It is business-led, small and time-boxed. It is not a large transformation, a new department, or a way around existing controls.`,
+   html:`<p class="lede">The tools are already here; adoption is low. Watch the floor: the program builds the environment, mindset and capability for departments to explore AI on real business problems and prove the benefit.</p>
+   <ul><li><b>Support people</b> to adopt AI confidently</li><li><b>Test</b> AI's contribution against real business problems</li><li><b>Use evidence</b> to guide further investment</li></ul>
+   <div class="two"><div class="card"><h4>What it is</h4><ul><li>A repeatable way to discover, test and validate</li><li>Business-led; executives own adoption and benefits</li><li>Small, time-boxed experiments with stop points</li><li>A route into existing investment governance</li></ul></div>
+   <div class="card neg"><h4>What it is not</h4><ul><li>A large transformation or new department</li><li>A technology-first hunt for AI uses</li><li>A request for a fully funded program today</li><li>A bypass of delegations, risk or architecture controls</li></ul></div></div>`},
+ { key:'objectives', short:'Five objectives', kicker:'Why',
+   title:'Five business-performance objectives',
+   say:`Every opportunity must link to at least one of five business-performance objectives: growing policies and members, improving retention, lifting member experience, improving productivity and cost-to-serve, and making well-considered investments in our future. Where AI can contribute is something we test, not something we assume.`,
+   html:`<p class="lede">Every opportunity must link to at least one. Where AI could contribute is <b>to be tested, not assumed</b>.</p>
+   <div class="stages">
+   <div class="stage"><div class="n">1</div><p><b>Policy growth &amp; member acquisition.</b> Sharper targeting across the join journey; faster, simpler conversion.</p></div>
+   <div class="stage"><div class="n">2</div><p><b>Member retention.</b> Earlier view of lapse risk; better-timed retention conversations.</p></div>
+   <div class="stage"><div class="n">3</div><p><b>Member experience.</b> Faster, more accurate service, claims and document handling.</p></div>
+   <div class="stage"><div class="n">4</div><p><b>Productivity &amp; cost-to-serve.</b> Automating manual admin; stronger claims controls; better use of existing tools.</p></div>
+   <div class="stage"><div class="n">5</div><p><b>Investing in the future.</b> Selective, evidence-led exploration before capabilities are needed at scale.</p></div>
+   </div>`},
+ { key:'model', short:'Operating model', kicker:'How it works',
+   title:'One Lead. A Lab that assembles around each problem.',
+   say:`The program is led by an Enterprise AI Performance Lead. The AI Performance Lab is a way of working, not a team or a place. For each priority opportunity, the Lead brings together the business owner, subject matter experts, Finance and technology specialists. When the work ends, they return to their usual roles. Accountability for outcomes stays with the business.`,
+   html:`<p class="lede">The <b>AI Performance Lab</b> is a way of working, not a team or a place. For each prioritised opportunity the Lead brings together the right people, who return to their usual roles when the work ends.</p>
+   <div class="two" style="grid-template-columns:1fr 1fr">
+     <div class="card"><h4>Discover &amp; Innovate</h4><ul><li>Find and challenge opportunities</li></ul></div>
+     <div class="card"><h4>Experiment &amp; Validate</h4><ul><li>Small, controlled proofs of value</li></ul></div>
+     <div class="card"><h4>Enable &amp; Adopt</h4><ul><li>Literacy, confidence, adoption</li></ul></div>
+     <div class="card"><h4>Automate &amp; Scale</h4><ul><li>Implement what's proven</li></ul></div>
+   </div>
+   <ul><li><b>Lead</b>: runs the pipeline, experiments, evidence and reporting</li>
+   <li><b>Sponsors &amp; business owners</b>: own the problem and the benefits</li>
+   <li><b>Finance</b> validates value; <b>Technology, Data, Security &amp; Privacy</b> assure</li></ul>
+   <div class="callout">Accountability for outcomes stays with the business.</div>`},
+ { key:'lifecycle', short:'Lifecycle', kicker:'Opportunity lifecycle',
+   title:'Investment grows only as confidence does',
+   say:`Every opportunity follows the same five stages: discover, shape, experiment, decide and scale. Each gate has an evidence threshold, so investment grows only as confidence grows. At the decide gate, the sponsor, Finance and the Lead choose to implement, refine, investigate further, or stop. Stopping is a legitimate and valuable result.`,
+   html:`<p class="lede">Every opportunity follows the same five stages. Each gate has a defined evidence threshold.</p>
+   <div class="stages">
+   <div class="stage"><div class="n">01</div><p><b>Discover.</b> A clear business problem, an interested sponsor, an initial size of the prize. Non-AI options considered.</p></div>
+   <div class="stage"><div class="n">02</div><p><b>Shape.</b> An agreed charter: hypothesis, Finance-agreed baseline, success criteria, cost cap, timeframe, early risk screening.</p></div>
+   <div class="stage"><div class="n">03</div><p><b>Experiment.</b> Time-boxed test in an approved environment, with no change to live decisions.</p></div>
+   <div class="stage"><div class="n">04</div><p><b>Decide.</b> Sponsor, Finance and the Lead record: implement, refine, investigate further or stop.</p></div>
+   <div class="stage"><div class="n">05</div><p><b>Scale.</b> Delivered through established teams with a named benefits owner and tracking.</p></div>
+   </div>
+   <div class="callout">Stopping is a legitimate, valuable result. Watch the ideas that peel off at the Decide gate.</div>`},
+ { key:'prioritise', short:'Screen & score', kicker:'Prioritisation',
+   title:'Screen first, then score',
+   say:`Because time and funding are limited, opportunities are screened, then scored. To pass screening, an opportunity needs a named sponsor, a link to an objective, a measurable baseline, appropriate data access, and a test that fits within a time-box and cost cap. Those that pass are scored on seven weighted criteria, with business value and data readiness weighted most heavily.`,
+   html:`<p class="lede">The Lab's SME time, specialist capacity and funding are limited. Prioritisation decides where they go.</p>
+   <div class="card" style="margin-bottom:14px"><h4>1 · Screen: all five must pass</h4><ul>
+   <li>A named Executive sponsor who owns the problem</li><li>Links to at least one of the five objectives</li><li>A baseline can be established</li><li>Data can be accessed and used appropriately</li><li>Testable within a time-box and cost cap</li></ul></div>
+   <h4 style="font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--aqua);margin-bottom:6px">2 · Score: seven weighted criteria</h4>
+   <div class="legend"><em style="background:var(--green)"></em>Value <em style="background:var(--aqua)"></em>Feasibility</div>
+   <div class="bars" id="bars"></div>
+   <p class="hint">Weights are proposed and would be agreed with Strategy and Finance before first use. The Lead recommends monthly; the Strategy executive endorses; the Executive sponsor confirms quarterly.</p>`},
+ { key:'capacity', short:'Resourcing & delivery capacity', kicker:'Resourcing & delivery capacity',
+   title:'How a work package gets real people, time and dates',
+   say:`This is how delivery capacity works. There's no new department and no permanent specialist team. Layer one is the Lead, supported by enabling partners with named contacts and booked checkpoints. Layer two is the Lab team, formed around an agreed charter, with resource managers approving people, effort and dates. Layer three is flexible specialist support, internal or external, costed and time-boxed, with knowledge transfer and exit terms. Every work package has a capacity agreement. Until it's confirmed, the status is awaiting capacity, not a delivery date. And if demand exceeds capacity, executives choose: reprioritise, fund support, reduce scope, or defer.`,
+   html:`<p class="lede" style="margin-bottom:10px">No new department or permanent team: access becomes <b>named, time-bounded commitments</b>.</p>
+   <div class="stages">
+   <div class="stage"><div class="n">1</div><p><b>Program leadership &amp; enabling capacity.</b> The Lead, plus platform and assurance partners with named contacts and booked checkpoints.</p></div>
+   <div class="stage"><div class="n">2</div><p><b>Lab team per opportunity.</b> Formed around a charter; resource managers approve people, effort and dates.</p></div>
+   <div class="stage"><div class="n">3</div><p><b>Flexible specialist support.</b> Internal or external: costed, time-boxed, with knowledge transfer and exit.</p></div>
+   </div>
+   <h4 style="font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--aqua);margin-bottom:8px">Every work package's capacity agreement records</h4>
+   <div class="chips"><span>Outcome &amp; deliverable</span><span>Business &amp; delivery owners</span><span>Named people</span><span>Hours, days &amp; dates</span><span>Resource-manager approval</span><span>Funding source &amp; cost cap</span><span>Dependencies &amp; assurance</span><span>Displaced work</span><span>Support &amp; handover</span></div>
+   <div class="flow"><b>Awaiting capacity</b><i>→</i><b class="g">Committed</b><i>→</i><b class="a">In delivery</b><i>→</i><b class="a">Handover</b><i>→</i><b class="a">Capacity released</b></div>
+   <div class="callout">Until confirmed: <b>awaiting capacity</b>, not a delivery date. Demand exceeds capacity? Executives <b>reprioritise, fund support, reduce scope or defer</b>.</div>`},
+ { key:'funding', short:'Funding & sourcing', kicker:'Funding & sourcing',
+   title:'The small cost of learning, separate from the cost of implementing',
+   say:`We separate the small cost of learning from the larger cost of implementing. Experimentation funding is modest, capped per experiment and approved within agreed delegations. Implementation is sized case by case through existing investment governance, using the evidence from the experiment. Internal capacity is preferred. Specialist support is added only where justified, and the organisation always keeps the accountability and the knowledge.`,
+   html:`<p class="lede">Building evidence before committing significant capital.</p>
+   <div class="two"><div class="card"><h4>Experimentation</h4><ul><li>Tests feasibility and value</li><li>Modest, capped, per experiment</li><li>Sponsor + Lead within delegations; Finance agrees baseline</li></ul></div>
+   <div class="card" style="border-color:rgba(255,181,71,.35);background:rgba(255,181,71,.06)"><h4 style="color:var(--amber)">Implementation</h4><ul><li>Delivers validated opportunities</li><li>Sized case by case through existing governance</li><li>Validated benefits, full-life costs, named owner</li></ul></div></div>
+   <h4 style="font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--aqua);margin-bottom:8px">Sourcing order</h4>
+   <div class="stages">
+   <div class="stage"><div class="n">1</div><p><b>Internal allocation</b> where capacity can be protected (preferred)</p></div>
+   <div class="stage"><div class="n">2</div><p><b>Blended</b>: targeted specialist support where justified</p></div>
+   <div class="stage"><div class="n">3</div><p><b>Otherwise</b>: reduce scope, sequence the work or defer</p></div>
+   </div>
+   <div class="callout">The organisation keeps accountability, approval authority and operational acceptance. Knowledge must not stay solely with a supplier.</div>
+   <p class="hint">An indicative six-month experimentation envelope is illustrative only: capped, to be agreed, reported monthly.</p>`},
+ { key:'ninety', short:'First 90 days', kicker:'First 90 days',
+   title:'Establish, test, demonstrate',
+   say:`In the first thirty days we establish sponsorship, baselines and priorities. In days thirty-one to sixty we begin initial experiments and lift adoption of existing AI tools. By day ninety we evaluate findings, quantify benefits with Finance and recommend what to implement, refine or stop. By six months, we expect at least one validated investment recommendation.`,
+   html:`<p class="lede">Experiments progress as fast as data, access and procurement readiness allow.</p>
+   <div class="phases">
+     <div class="phase"><small>Days 1–30</small><b>Establish</b><div>Sponsorship &amp; mandate · leader engagement · baselines with Finance · resource availability · prioritise · governance &amp; funding controls</div></div>
+     <div class="phase"><small>Days 31–60</small><b>Test</b><div>First experiments · engage specialists &amp; vendors · lift adoption of existing AI tools · evidence of feasibility</div></div>
+     <div class="phase"><small>Days 61–90</small><b>Demonstrate</b><div>Evaluate findings · quantify benefits with Finance · recommend decisions · next pipeline · report to executives</div></div>
+   </div>
+   <ul><li><b>By 90 days:</b> governance agreed, prioritised pipeline, at least one experiment under way with a Finance-agreed baseline, adoption baseline set</li>
+   <li><b>By six months:</b> evidence-based decisions, at least one validated recommendation, spend within envelope, measurable adoption lift</li>
+   <li><b>Ongoing:</b> validated benefits, forecast vs realised reporting, responsible AI controls throughout</li></ul>`},
+ { key:'ask', short:'The ask', kicker:'Decisions sought',
+   title:'What we are asking for',
+   say:`So, what are we asking for? Not a fully funded program. We are seeking your endorsement of the direction, executive sponsorship and a mandate for the Lead, support for the layered resourcing approach, a commission for a costed experimentation funding proposal, and agreement on how initial opportunities are selected. Funding and specific opportunities will come back to you with costed proposals and evidence.`,
+   html:`<p class="lede">This is <b>not</b> a request to approve a fully funded program. Executive leadership support is sought to:</p>
+   <div class="asks">
+   <div class="ask"><span><b>Endorse the direction:</b> the AI Acceleration Program, the AI Performance Lab and the five-stage lifecycle</span></div>
+   <div class="ask"><span><b>Provide Executive sponsorship</b> and an enterprise-wide mandate for the Enterprise AI Performance Lead</span></div>
+   <div class="ask"><span><b>Endorse the layered resourcing approach</b> and commission named, time-bounded capacity agreements</span></div>
+   <div class="ask"><span><b>Commission</b> a governed, costed experimentation funding proposal</span></div>
+   <div class="ask"><span><b>Agree how initial opportunities are selected</b> through the 90-day plan</span></div>
+   </div>
+   <div class="callout">Support for the direction and access to the people needed. Funding and specific opportunities come back for approval with costed proposals and evidence.</div>`}
+];
+const N=STOPS.length;
+const WEIGHTS=[['Business value',25,'v'],['Data & tech readiness',20,'f'],['Member & employee impact',15,'v'],['AI fit',10,'f'],['Cost & time to evidence',10,'f'],['Risk & complexity',10,'f'],['Reuse & learning',10,'v']];
+
+/* =====================================================================
+   RENDERER / SCENE
+   ===================================================================== */
+const C = { navy:0x061a2e, deep:0x0b2a45, teal:0x00a3ad, aqua:0x5fd4d0, green:0x6cc24a, amber:0xffb547, coral:0xff7a6b, white:0xeaf6f7, blue:0x3f8fd6 };
+const hex=c=>'#'+new THREE.Color(c).getHexString();
+const canvas=document.getElementById('gl');
+let renderer;
+try{ renderer=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:'high-performance'}); }
+catch(e){ document.getElementById('err').style.display='grid'; return; }
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.75));
+renderer.setSize(innerWidth,innerHeight);
+renderer.outputEncoding=THREE.LinearEncoding;
+
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x04121f);
+scene.fog=new THREE.FogExp2(0x04121f,0.0042);
+const camera=new THREE.PerspectiveCamera(48,innerWidth/innerHeight,0.1,1200);
+camera.position.set(0,170,230);
+
+scene.add(new THREE.HemisphereLight(0xbfefff,0x0b2a45,0.8));
+const sun=new THREE.DirectionalLight(0xffffff,0.75); sun.position.set(60,120,40); scene.add(sun);
+const rim=new THREE.DirectionalLight(0x5fd4d0,0.3); rim.position.set(-80,40,-60); scene.add(rim);
+
+let composer=null;
+if(THREE.EffectComposer && THREE.UnrealBloomPass && !/nobloom/.test(location.search)){
+  composer=new THREE.EffectComposer(renderer);
+  composer.addPass(new THREE.RenderPass(scene,camera));
+  composer.addPass(new THREE.UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight),0.65,0.45,0.64));
+}
+
+/* ---------- helpers ---------- */
+const V=(x,y,z)=>new THREE.Vector3(x,y,z);
+const std=(color,o={})=>new THREE.MeshStandardMaterial(Object.assign({color,roughness:.6,metalness:.12},o));
+const glow=(color,i=1.6,o={})=>new THREE.MeshStandardMaterial(Object.assign({color,emissive:color,emissiveIntensity:i,roughness:.4},o));
+const updaters=[], labels=[];
+const lerp=(a,b,t)=>a+(b-a)*t;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const ease=t=>t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
+const seg=(t,a,b)=>clamp((t-a)/(b-a),0,1);
+let current=-1, now=0, arrivedAt=0, stopStart=0;
+
+function roundRect(g,x,y,w,h,r){g.beginPath();g.moveTo(x+r,y);g.lineTo(x+w-r,y);g.quadraticCurveTo(x+w,y,x+w,y+r);g.lineTo(x+w,y+h-r);g.quadraticCurveTo(x+w,y+h,x+w-r,y+h);g.lineTo(x+r,y+h);g.quadraticCurveTo(x,y+h,x,y+h-r);g.lineTo(x,y+r);g.quadraticCurveTo(x,y,x+r,y);g.closePath();}
+function labelCanvas(text,{accent='#00a3ad',sub=null,color='#eaf6f7',bg='rgba(6,26,46,0.85)'}){
+  const pad=26, fs=46, ss=30, c=document.createElement('canvas'), g=c.getContext('2d');
+  g.font=`700 ${fs}px Inter, sans-serif`; let w=g.measureText(text).width;
+  if(sub){ g.font=`500 ${ss}px Inter, sans-serif`; w=Math.max(w,g.measureText(sub).width); }
+  c.width=Math.ceil(w+pad*2+14); c.height=sub?132:92;
+  g.fillStyle=bg; roundRect(g,0,0,c.width,c.height,18); g.fill();
+  g.fillStyle=accent; g.fillRect(0,14,7,c.height-28);
+  g.fillStyle=color; g.font=`700 ${fs}px Inter, sans-serif`; g.textBaseline='middle';
+  g.fillText(text,pad+8,sub?44:c.height/2+2);
+  if(sub){ g.fillStyle='#9fb9c6'; g.font=`500 ${ss}px Inter, sans-serif`; g.fillText(sub,pad+8,94); }
+  return c;
+}
+function label(text,{size=1,accent='#00a3ad',sub=null,range=55}={}){
+  const c=labelCanvas(text,{accent,sub});
+  const tex=new THREE.CanvasTexture(c); tex.anisotropy=4;
+  const s=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,depthWrite:false,depthTest:false,opacity:0}));
+  const h=1.85*size; s.scale.set(h*c.width/c.height,h,1); s.userData.h=h;
+  s.userData.range=range; s.userData.mult=1; s.renderOrder=10; labels.push(s); return s;
+}
+function relabel(s,text,opts){ const c=labelCanvas(text,opts); s.material.map.dispose(); s.material.map=new THREE.CanvasTexture(c); s.material.needsUpdate=true; s.scale.set(s.userData.h*c.width/c.height,s.userData.h,1); }
+
+/* people: shared geometry, cached materials */
+const PG={body:new THREE.CylinderGeometry(.26,.38,1.05,10), seat:new THREE.CylinderGeometry(.27,.36,.72,10), head:new THREE.SphereGeometry(.27,14,10), ring:new THREE.TorusGeometry(.42,.035,6,20)};
+const matCache={}; const pm=c=>matCache[c]||(matCache[c]=std(c,{roughness:.4}));
+const gmCache={}; const gm=c=>gmCache[c]||(gmCache[c]=glow(c,1.4));
+const headMat=std(0xf1f7f8,{roughness:.35});
+const SHIRTS=[0x2f8fb0,0x4aa3a0,0x6c8fb5,0x3b6f8f,0x8aa6b8,0x5aa77f,0x2b7a8c];
+function person(color,scale=1,seated=false){
+  const g=new THREE.Group();
+  const body=new THREE.Mesh(seated?PG.seat:PG.body,pm(color)); body.position.y=seated?.75:.55; g.add(body);
+  const head=new THREE.Mesh(PG.head,headMat); head.position.y=seated?1.38:1.32; g.add(head);
+  if(!seated){ const ring=new THREE.Mesh(PG.ring,gm(color)); ring.rotation.x=Math.PI/2; ring.position.y=.04; g.add(ring); }
+  g.scale.setScalar(scale); return g;
+}
+/* desks */
+const DG={top:new THREE.BoxGeometry(2.2,.12,1.2), base:new THREE.BoxGeometry(2.0,.9,.12), mon:new THREE.BoxGeometry(.95,.58,.06), chair:new THREE.BoxGeometry(.7,.55,.7)};
+const deskMat=std(0x2b4e66,{roughness:.5}), chairMat=std(0x16364d);
+function desk(screenMat,occupied=true){
+  const g=new THREE.Group();
+  const t=new THREE.Mesh(DG.top,deskMat); t.position.y=1.0; g.add(t);
+  const b=new THREE.Mesh(DG.base,deskMat); b.position.set(0,.5,-.45); g.add(b);
+  const m=new THREE.Mesh(DG.mon,screenMat); m.position.set(0,1.42,-.3); g.add(m);
+  const ch=new THREE.Mesh(DG.chair,chairMat); ch.position.set(0,.3,.95); g.add(ch);
+  if(occupied){ const p=person(SHIRTS[Math.floor(Math.random()*SHIRTS.length)],1,true); p.position.set(0,0,.95); p.rotation.y=Math.PI; g.add(p); g.userData.p=p; }
+  return g;
+}
+function plant(x,z,s=1){ const g=new THREE.Group(); const pot=new THREE.Mesh(new THREE.CylinderGeometry(.5,.38,.8,10),std(0xd9e6ea)); pot.position.y=.4; g.add(pot);
+  const f=new THREE.Mesh(new THREE.IcosahedronGeometry(.9,0),std(0x2f8a63,{flatShading:true})); f.position.y=1.5; f.scale.set(1,1.3,1); g.add(f); g.position.set(x,0,z); g.scale.setScalar(s); scene.add(g); return g; }
+function glassRoom(cx,cz,w,d,h=3.2,col=C.aqua,door=null){
+  const g=new THREE.Group(); g.position.set(cx,0,cz);
+  const gm_=new THREE.MeshStandardMaterial({color:0xbfefff,transparent:true,opacity:.07,roughness:.05,metalness:.3,side:THREE.DoubleSide,depthWrite:false});
+  const edge=glow(col,.9);
+  const walls=[[0,-d/2,w,0],[0,d/2,w,0],[-w/2,0,d,Math.PI/2],[w/2,0,d,Math.PI/2]];
+  walls.forEach(([x,z,len,ry],i)=>{
+    const segs=(door&&door.side===i)?[[-len/2,door.at-1.4],[door.at+1.4,len/2]]:[[-len/2,len/2]];
+    segs.forEach(([a,b])=>{ const L=b-a, mid=(a+b)/2; if(L<=0) return;
+      const p=new THREE.Mesh(new THREE.PlaneGeometry(L,h),gm_); p.position.set(x+(ry?0:mid),h/2,z+(ry?mid:0)); p.rotation.y=ry; g.add(p);
+      const e=new THREE.Mesh(new THREE.BoxGeometry(L,.08,.08),edge); e.position.set(p.position.x,h,p.position.z); e.rotation.y=ry; g.add(e);
+      const e2=e.clone(); e2.position.y=.05; g.add(e2); });
+  });
+  scene.add(g); return g;
+}
+function rug(cx,cz,w,d,col,op=.35){ const m=new THREE.Mesh(new THREE.PlaneGeometry(w,d),new THREE.MeshStandardMaterial({color:col,transparent:true,opacity:op,roughness:.9})); m.rotation.x=-Math.PI/2; m.position.set(cx,.03,cz); scene.add(m);
+  const e=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.PlaneGeometry(w,d)),new THREE.LineBasicMaterial({color:col,transparent:true,opacity:.6})); e.rotation.x=-Math.PI/2; e.position.set(cx,.05,cz); scene.add(e); return m; }
+
+/* =====================================================================
+   THE OFFICE FLOOR
+   ===================================================================== */
+const FW=200, FD=140;
+{
+  // floor tiles
+  const c=document.createElement('canvas'); c.width=c.height=128; const g=c.getContext('2d');
+  g.fillStyle='#0e2c43'; g.fillRect(0,0,128,128); g.strokeStyle='#17405c'; g.lineWidth=2; g.strokeRect(1,1,126,126);
+  const t=new THREE.CanvasTexture(c); t.wrapS=t.wrapT=THREE.RepeatWrapping; t.repeat.set(FW/4,FD/4); t.anisotropy=8;
+  const floor=new THREE.Mesh(new THREE.PlaneGeometry(FW+6,FD+6),new THREE.MeshStandardMaterial({map:t,roughness:.75,metalness:.15}));
+  floor.rotation.x=-Math.PI/2; scene.add(floor);
+  const slab=new THREE.Mesh(new THREE.BoxGeometry(FW+8,3,FD+8),std(0x0a2133)); slab.position.y=-1.52; scene.add(slab);
+  // curtain wall with mullions
+  const H=9, gmat=new THREE.MeshStandardMaterial({color:0x9fdcf0,transparent:true,opacity:.06,roughness:.05,metalness:.4,side:THREE.DoubleSide,depthWrite:false});
+  const mull=glow(C.teal,.55), mg=new THREE.BoxGeometry(.25,H,.25);
+  [[0,-FD/2,FW,0],[0,FD/2,FW,0],[-FW/2,0,FD,Math.PI/2],[FW/2,0,FD,Math.PI/2]].forEach(([x,z,L,ry])=>{
+    const p=new THREE.Mesh(new THREE.PlaneGeometry(L,H),gmat); p.position.set(x,H/2,z); p.rotation.y=ry; scene.add(p);
+    const top=new THREE.Mesh(new THREE.BoxGeometry(L,.3,.3),glow(C.teal,1.1)); top.position.set(x,H,z); top.rotation.y=ry; scene.add(top);
+    for(let k=0;k<=L;k+=8){ const m=new THREE.Mesh(mg,mull); const o=k-L/2; m.position.set(ry?x:o,H/2,ry?o:z); scene.add(m); }
+  });
+  // city outside
+  const wc=document.createElement('canvas'); wc.width=64; wc.height=128; const w=wc.getContext('2d'); w.fillStyle='#000'; w.fillRect(0,0,64,128);
+  for(let r=0;r<16;r++)for(let k=0;k<5;k++){ if(Math.random()<.45){ w.fillStyle=Math.random()<.8?'#9fdcf0':'#ffd28a'; w.fillRect(4+k*12,4+r*8,7,4);} }
+  const wt=new THREE.CanvasTexture(wc); wt.wrapS=wt.wrapT=THREE.RepeatWrapping;
+  const ground=new THREE.Mesh(new THREE.CircleGeometry(900,48),std(0x03101b,{roughness:1})); ground.rotation.x=-Math.PI/2; ground.position.y=-3; scene.add(ground);
+  for(let i=0;i<110;i++){
+    const a=Math.random()*Math.PI*2, r=170+Math.random()*260, h=20+Math.random()*110, bw=12+Math.random()*16;
+    const tex=wt.clone(); tex.needsUpdate=true; tex.repeat.set(Math.max(1,bw/12),h/24);
+    const m=new THREE.MeshStandardMaterial({color:0x0b2236,emissive:0xffffff,emissiveMap:tex,emissiveIntensity:.55,roughness:.6});
+    const b=new THREE.Mesh(new THREE.BoxGeometry(bw,h,bw),m); b.position.set(Math.cos(a)*r,h/2-3,Math.sin(a)*r); b.rotation.y=Math.random(); scene.add(b);
+  }
+  // stars
+  const n=1400,p=new Float32Array(n*3); for(let i=0;i<n;i++){const r=650,th=Math.random()*Math.PI*2,ph=Math.random()*Math.PI*.42; p[i*3]=r*Math.cos(th)*Math.sin(ph);p[i*3+1]=r*Math.cos(ph);p[i*3+2]=r*Math.sin(th)*Math.sin(ph);}
+  const sg=new THREE.BufferGeometry(); sg.setAttribute('position',new THREE.BufferAttribute(p,3));
+  scene.add(new THREE.Points(sg,new THREE.PointsMaterial({color:0xbfefff,size:1.6,fog:false,transparent:true,opacity:.7})));
+  // columns (short, structural)
+  for(const x of [-66,-22,22,66]) for(const z of [-22,22]){ /* kept clear of zones by design */ }
+  // plants around the edge
+  for(let x=-92;x<=92;x+=14){ plant(x,-FD/2+2.5,.9); plant(x+7,FD/2-2.5,.9); }
+  for(let z=-56;z<=56;z+=14){ plant(-FW/2+2.5,z,.9); plant(FW/2-2.5,z+7,.9); }
+}
+
+/* zone centres */
+const Z={ org:V(-62,0,36), obj:V(-78,0,-28), lab:V(-36,0,-34), life:V(8,0,10), prio:V(62,0,36), res:V(36,0,-38), fund:V(80,0,-30), d90:V(-2,0,52), ask:V(2,0,-52) };
+
+/* journey runner on the floor */
+const pathPts=[V(-30,0,66),Z.org,V(-80,0,4),Z.obj,Z.lab,V(-10,0,-8),V(-16,0,10),V(34,0,10),Z.prio,V(66,0,6),Z.res,Z.fund,V(90,0,4),V(30,0,26),Z.d90,V(-12,0,24),V(-10,0,-10),Z.ask].map(p=>V(p.x,.08,p.z));
+const journey=new THREE.CatmullRomCurve3(pathPts,false,'catmullrom',.4);
+scene.add(new THREE.Mesh(new THREE.TubeGeometry(journey,600,.16,5,false),glow(C.teal,.7,{transparent:true,opacity:.6})));
+const pulses=[]; for(let i=0;i<18;i++){const m=new THREE.Mesh(new THREE.SphereGeometry(.35,10,8),glow(C.aqua,3)); scene.add(m); pulses.push(m);}
+updaters.push(t=>pulses.forEach((m,i)=>{const u=((t*.012)+i/pulses.length)%1; m.position.copy(journey.getPointAt(u)); m.position.y=.4;}));
+
+/* corridor walkers */
+{
+  const loops=[
+    {pts:[V(-94,0,-64),V(94,0,-64),V(94,0,64),V(-94,0,64)],n:34},
+    {pts:[V(-94,0,-10),V(94,0,-10)],n:16,pingpong:true},
+    {pts:[V(41,0,-10),V(41,0,64)],n:6,pingpong:true},
+    {pts:[V(-29,0,-10),V(-29,0,64)],n:6,pingpong:true},
+  ];
+  loops.forEach(L=>{
+    const curve=new THREE.CurvePath(); const pts=L.pts.slice(); if(!L.pingpong) pts.push(L.pts[0]);
+    for(let i=0;i<pts.length-1;i++) curve.add(new THREE.LineCurve3(pts[i],pts[i+1]));
+    const len=curve.getLength();
+    for(let i=0;i<L.n;i++){
+      const p=person(SHIRTS[i%SHIRTS.length],1); scene.add(p);
+      const off=i/L.n+Math.random()*.02, sp=(1.6+Math.random()*.8)/len, dir=(L.pingpong&&i%2)?-1:1, lane=(i%2?.9:-.9);
+      updaters.push(t=>{
+        let u=(off+t*sp*dir); if(L.pingpong){ u=((u%2)+2)%2; if(u>1) u=2-u; } else u=((u%1)+1)%1;
+        const a=curve.getPointAt(u), b=curve.getPointAt(clamp(u+.001,0,1));
+        p.position.set(a.x+lane*(b.z-a.z!==0?1:0),Math.abs(Math.sin(t*7+i))*.07,a.z+lane*(b.x-a.x!==0?1:0));
+        const fwdSign = L.pingpong ? (Math.floor(((off+t*sp*dir)%2+2)%2)===0?dir:-dir) : 1;
+        p.rotation.y=Math.atan2((b.x-a.x)*fwdSign,(b.z-a.z)*fwdSign);
+      });
+    }
+  });
+}
+
+/* =====================================================================
+   STOP 1 — open-plan floor: screens light up as adoption grows
+   ===================================================================== */
+const orgState={level:.12};
+{
+  const g=new THREE.Group(); g.position.copy(Z.org); scene.add(g);
+  rug(Z.org.x,Z.org.z,52,40,0x123f5c,.45);
+  const depts=['Member services','Claims','Sales & growth','Finance','Technology','People & culture'];
+  const pods=[]; const hub=V(0,17,0);
+  depts.forEach((d,i)=>{
+    const px=(i%3-1)*16, pz=(Math.floor(i/3)-.5)*17;
+    const screen=new THREE.MeshStandardMaterial({color:0x10202c,emissive:C.aqua,emissiveIntensity:.05,roughness:.3});
+    for(let r=0;r<2;r++)for(let k=0;k<3;k++){ const dk=desk(screen); dk.position.set(px+(k-1)*2.4,0,pz+(r?1.6:-1.6)); dk.rotation.y=r?0:Math.PI; g.add(dk);
+      if(dk.userData.p){ const p=dk.userData.p, ph=Math.random()*6; updaters.push(t=>{p.rotation.y=Math.PI+Math.sin(t*.7+ph)*.25;}); } }
+    const l=label(d,{size:.85,range:52}); l.position.set(px,4.4,pz); g.add(l);
+    const lm=new THREE.LineBasicMaterial({color:C.aqua,transparent:true,opacity:0});
+    const line=new THREE.Line(new THREE.BufferGeometry().setFromPoints([V(px,2.2,pz),hub]),lm); g.add(line);
+    pods.push({screen,line,i});
+  });
+  // a few people standing and chatting
+  for(let i=0;i<10;i++){ const p=person(SHIRTS[i%7]); const a=Math.random()*Math.PI*2; p.position.set(Math.cos(a)*22,0,Math.sin(a)*15); g.add(p); const ph=Math.random()*6; updaters.push(t=>{p.rotation.y=a+Math.sin(t*.5+ph);}); }
+  const core=new THREE.Mesh(new THREE.IcosahedronGeometry(2.4,1),glow(C.aqua,1.2,{wireframe:true})); core.position.copy(hub); g.add(core);
+  const coreIn=new THREE.Mesh(new THREE.IcosahedronGeometry(1.4,0),glow(C.green,2)); coreIn.position.copy(hub); g.add(coreIn);
+  const cl=label('Existing AI tools',{size:1,sub:'available to everyone',accent:'#6cc24a',range:70}); cl.position.set(0,21.6,0); g.add(cl);
+  const adopt=label('Adoption: low',{size:1,accent:'#ff7a6b',range:70}); adopt.position.set(0,13.2,0); g.add(adopt);
+  let shown=0; const order=[1,4,0,2,3,5];
+  updaters.push((t,dt)=>{
+    core.rotation.y=t*.3; core.rotation.x=t*.17; coreIn.rotation.y=-t*.5;
+    let tgt; if(current===0) tgt=arrivedAt>0?clamp((now-arrivedAt-1)/9,.12,1):.12; else tgt=current>0?1:.12;
+    orgState.level=lerp(orgState.level,tgt,dt*(current===0?2:.8));
+    const lv=orgState.level;
+    pods.forEach(({screen,line,i})=>{ const on=order.indexOf(i)<Math.max(2,Math.round(lv*6)); screen.emissiveIntensity=lerp(screen.emissiveIntensity,on?1.3:.06,dt*2.5); line.material.opacity=lerp(line.material.opacity,on?.8:.04,dt*2.5); });
+    const idx= lv<.4?0: lv<.85?1:2;
+    if(idx!==shown){ shown=idx; relabel(adopt,['Adoption: low','Adoption: growing','Adoption: confident'][idx],{accent:['#ff7a6b','#ffb547','#6cc24a'][idx]}); }
+  });
+}
+
+/* =====================================================================
+   STOP 2 — atrium with five objective totems
+   ===================================================================== */
+{
+  const g=new THREE.Group(); g.position.copy(Z.obj); scene.add(g);
+  const disc=new THREE.Mesh(new THREE.CircleGeometry(15,48),std(0x123f5c,{transparent:true,opacity:.7})); disc.rotation.x=-Math.PI/2; disc.position.y=.04; g.add(disc);
+  const objs=[['Policy growth','& member acquisition',C.green],['Member retention','reduce lapses',C.aqua],['Member experience','& satisfaction',C.teal],['Productivity','efficiency & cost-to-serve',C.blue],['Future investment','well-considered exploration',C.amber]];
+  const items=[];
+  objs.forEach(([t,s,col],i)=>{
+    const z=(i-2)*5.4, x=-Math.abs(i-2)*1.6;
+    const base=new THREE.Mesh(new THREE.CylinderGeometry(1.7,2,.6,6),std(0x1b4d6b)); base.position.set(x,.3,z); g.add(base);
+    const col_=new THREE.Mesh(new THREE.BoxGeometry(1.4,6,1.4),std(0x16405a,{metalness:.4})); col_.position.set(x,3.6,z); g.add(col_);
+    const panel=new THREE.Mesh(new THREE.PlaneGeometry(1.1,5),glow(col,.9)); panel.position.set(x+.71,3.6,z); panel.rotation.y=Math.PI/2; g.add(panel);
+    const gem=new THREE.Mesh(new THREE.OctahedronGeometry(1.1,0),glow(col,2.2)); gem.position.set(x,8.4,z); g.add(gem);
+    const beam=new THREE.Mesh(new THREE.CylinderGeometry(.3,.3,40,10,1,true),new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:0,depthWrite:false,blending:THREE.AdditiveBlending})); beam.position.set(x,29,z); g.add(beam);
+    const num=label(String(i+1),{size:1,accent:hex(col),range:60}); num.position.set(x,10.6,z); g.add(num);
+    const l=label(t,{size:.75,sub:s,accent:hex(col),range:52}); l.position.set(x+3.2,1.6,z); g.add(l);
+    items.push({gem,beam,i});
+  });
+  for(let i=0;i<9;i++){ const p=person(SHIRTS[i%7]); const z=(Math.random()-.5)*24, x=6+Math.random()*6; p.position.set(x,0,z); p.rotation.y=-Math.PI/2+(Math.random()-.5); g.add(p); }
+  updaters.push((t,dt)=>items.forEach(({gem,beam,i})=>{gem.rotation.y=t*.8+i; const on=current>=1; beam.material.opacity=lerp(beam.material.opacity,on?.22+.1*Math.sin(t*2+i):0,dt*2);}));
+}
+
+/* =====================================================================
+   STOP 3 — the Lab: glass room, Lead at centre, people assemble
+   ===================================================================== */
+{
+  const g=new THREE.Group(); g.position.copy(Z.lab); scene.add(g);
+  glassRoom(Z.lab.x,Z.lab.z,30,26,3.2,C.aqua,{side:1,at:0});
+  const quads=[['Discover & Innovate',C.green],['Experiment & Validate',C.aqua],['Enable & Adopt',C.teal],['Automate & Scale',C.amber]];
+  quads.forEach(([n,col],i)=>{
+    const s=new THREE.Mesh(new THREE.RingGeometry(3.6,9.6,24,1,i*Math.PI/2+.06,Math.PI/2-.12),glow(col,.3,{side:THREE.DoubleSide,transparent:true,opacity:.5}));
+    s.rotation.x=-Math.PI/2; s.position.y=.06; g.add(s);
+    const a=i*Math.PI/2+Math.PI/4; const l=label(n,{size:.7,accent:hex(col),range:50}); l.position.set(Math.cos(a)*11,.9,-Math.sin(a)*9.5); g.add(l);
+  });
+  const table=new THREE.Mesh(new THREE.CylinderGeometry(2.6,2.6,.2,6),std(0x2b4e66)); table.position.y=1; g.add(table);
+  const tb=new THREE.Mesh(new THREE.CylinderGeometry(.5,.8,1,6),std(0x1b4d6b)); tb.position.y=.5; g.add(tb);
+  const holo=new THREE.Mesh(new THREE.IcosahedronGeometry(.8,1),glow(C.aqua,1.6,{wireframe:true})); holo.position.y=2.4; g.add(holo);
+  const lead=person(C.amber,1.25); lead.position.set(0,0,3.6); lead.rotation.y=Math.PI; g.add(lead);
+  const ll=label('Enterprise AI Performance Lead',{size:.85,accent:'#ffb547',range:55}); ll.position.set(0,5.4,3.6); g.add(ll);
+  const roles=[['Business owner',C.green],['SMEs',C.green],['Finance',C.blue],['Technology',C.teal],['Data',C.aqua],['Architecture',C.teal],['Security & privacy',C.aqua],['External specialist',C.coral]];
+  roles.forEach(([n,col],i)=>{
+    const a=Math.PI*.15+i/roles.length*Math.PI*1.7; const home=V(Math.cos(a)*12.4,0,Math.sin(a)*11); const near=V(Math.cos(a)*3.9,0,Math.sin(a)*3.9);
+    const p=person(col,1); g.add(p);
+    const l=label(n,{size:.55,accent:hex(col),range:42}); p.add(l); l.position.set(0,2.2,0);
+    updaters.push(t=>{
+      const cyc=(t*.08 + (i%3)*.03)%1; const k= cyc<.25? ease(cyc/.25): cyc<.6?1: cyc<.85? 1-ease((cyc-.6)/.25):0;
+      p.position.lerpVectors(home,near,k); p.position.y=(k>0&&k<1)?Math.abs(Math.sin(t*7+i))*.07:0;
+      p.rotation.y=Math.atan2(-p.position.x,-p.position.z);
+    });
+  });
+  const tag=label('Participants return to their usual roles when the work ends',{size:.55,range:44,accent:'#9fb9c6'}); tag.position.set(0,.8,14.5); g.add(tag);
+  updaters.push(t=>{holo.rotation.y=t*.6; holo.rotation.x=t*.3;});
+}
+
+/* =====================================================================
+   STOP 4 — lifecycle pipeline corridor
+   ===================================================================== */
+{
+  const g=new THREE.Group(); g.position.copy(Z.life); scene.add(g);
+  const L=46, x0=-L/2;
+  const road=new THREE.Mesh(new THREE.BoxGeometry(L+8,.16,4.4),std(0x113a55,{metalness:.3})); road.position.y=.08; g.add(road);
+  for(const s of [-1,1]){const e=new THREE.Mesh(new THREE.BoxGeometry(L+8,.1,.14),glow(C.teal,1.5)); e.position.set(0,.2,s*2.2); g.add(e);}
+  const stages=['Discover','Shape','Experiment','Decide','Scale'];
+  const gx=stages.map((_,i)=>x0+4+i*(L-8)/4);
+  stages.forEach((n,i)=>{
+    const col=i===3?C.amber:C.aqua;
+    const arch=new THREE.Mesh(new THREE.TorusGeometry(3.4,.22,10,40,Math.PI),glow(col,1.6)); arch.position.set(gx[i],.15,0); arch.rotation.y=Math.PI/2; g.add(arch);
+    const l=label(`0${i+1}  ${n}`,{size:.85,accent:hex(col),range:62}); l.position.set(gx[i],5.2,0); g.add(l);
+  });
+  // gatekeepers at Decide
+  [['Sponsor',C.green],['Finance',C.blue],['Lead',C.amber]].forEach(([n,col],k)=>{ const p=person(col); p.position.set(gx[3]-1.6+k*1.6,0,-3.6); g.add(p); const l=label(n,{size:.45,accent:hex(col),range:38}); l.position.set(0,2.1,0); p.add(l); });
+  const conf=label('Confidence & investment grow →',{size:.7,range:62,accent:'#6cc24a'}); conf.position.set(-12,.8,4.6); g.add(conf);
+  const pond=new THREE.Mesh(new THREE.CylinderGeometry(3,3,.2,32),glow(C.coral,.5,{transparent:true,opacity:.7})); pond.position.set(gx[3]+1,.1,8); g.add(pond);
+  const pl=label('Stopped: learning captured',{size:.7,accent:'#ff7a6b',range:62}); pl.position.set(gx[3]+1,1.4,10.4); g.add(pl);
+  // operations pod at the end
+  const ox=x0+L+6;
+  const oscreen=new THREE.MeshStandardMaterial({color:0x10202c,emissive:C.green,emissiveIntensity:1.1});
+  for(let k=0;k<4;k++){ const dk=desk(oscreen); dk.position.set(ox+(k%2)*2.4-1.2,0,(k<2?-1.6:1.6)); dk.rotation.y=k<2?Math.PI:0; g.add(dk); }
+  const tl=label('Operations',{size:.75,sub:'named benefits owner',accent:'#6cc24a',range:62}); tl.position.set(ox,4.6,0); g.add(tl);
+  const orbs=[];
+  for(let i=0;i<16;i++){const m=new THREE.Mesh(new THREE.SphereGeometry(.5,16,12),glow(C.aqua,2)); g.add(m); orbs.push({m,u:-i/16,fate:Math.random()<.4,z:(Math.random()-.5)*2,sp:.045+Math.random()*.01});}
+  const cA=new THREE.Color(C.aqua), cB=new THREE.Color(C.green), cS=new THREE.Color(C.coral);
+  const decU=(gx[3]-x0)/L;
+  updaters.push((t,dt)=>orbs.forEach(o=>{
+    o.u+=dt*o.sp; const m=o.m;
+    if(o.u<0){m.visible=false;return;} m.visible=true;
+    const stageIdx=gx.filter(x=>x<=x0+o.u*L).length;
+    const s=.35+stageIdx*.17; m.scale.lerp(V(s,s,s),dt*3);
+    if(o.fate && o.u>decU){ const k=clamp((o.u-decU)/.12,0,1); m.position.set(lerp(gx[3],gx[3]+1,k),lerp(1,.4,k)+Math.sin(k*Math.PI)*2,lerp(o.z,8,k));
+      m.material.color.lerpColors(cA,cS,k); m.material.emissive.copy(m.material.color);
+      if(k>=1){o.u=-Math.random()*.3;o.fate=Math.random()<.4;} return; }
+    if(o.u>1){ const k=clamp((o.u-1)/.08,0,1); m.position.set(lerp(x0+L,ox,k),1+Math.sin(k*Math.PI)*2,0); if(k>=1){o.u=-Math.random()*.3;o.fate=Math.random()<.4;} return; }
+    m.position.set(x0+o.u*L,1+Math.sin(t*3+o.z*5)*.15,o.z);
+    m.material.color.lerpColors(cA,cB,clamp(o.u,0,1)); m.material.emissive.copy(m.material.color);
+  }));
+}
+
+/* =====================================================================
+   STOP 5 — prioritisation war room: funnel + weighted pillars
+   ===================================================================== */
+{
+  const g=new THREE.Group(); g.position.copy(Z.prio); scene.add(g);
+  glassRoom(Z.prio.x,Z.prio.z,36,22,3.2,C.amber,{side:0,at:-6});
+  const fx=-9;
+  const funnel=new THREE.Mesh(new THREE.CylinderGeometry(6,1.2,10,32,1,true),new THREE.MeshStandardMaterial({color:C.aqua,emissive:C.teal,emissiveIntensity:.4,transparent:true,opacity:.16,side:THREE.DoubleSide,depthWrite:false}));
+  funnel.position.set(fx,7,0); g.add(funnel);
+  const fw=new THREE.Mesh(new THREE.CylinderGeometry(6,1.2,10,16,5,true),glow(C.aqua,.8,{wireframe:true,transparent:true,opacity:.35})); fw.position.copy(funnel.position); g.add(fw);
+  ['Sponsor','Objective link','Baseline','Data access','Time-box & cap'].forEach((q,i)=>{ const y=11.4-i*2.1; const r=lerp(5.6,1.6,i/4.2);
+    const ring=new THREE.Mesh(new THREE.TorusGeometry(r,.1,8,48),glow(C.amber,1.8)); ring.rotation.x=Math.PI/2; ring.position.set(fx,y,0); g.add(ring);
+    const l=label(q,{size:.55,accent:'#ffb547',range:46}); l.position.set(fx-r-2.6,y,0); g.add(l); });
+  const sl=label('1 · Screen',{size:.95,sub:'all five must pass',accent:'#ffb547',range:62}); sl.position.set(fx,15.2,0); g.add(sl);
+  const lead=person(C.amber,1.1); lead.position.set(fx+3,0,4); lead.rotation.y=-2.4; g.add(lead);
+  const park=new THREE.Mesh(new THREE.CylinderGeometry(2.2,2.2,.2,28),glow(C.coral,.45,{transparent:true,opacity:.7})); park.position.set(fx-2,.1,7); g.add(park);
+  const pk=label('Parked / returned with feedback',{size:.55,accent:'#ff7a6b',range:46}); pk.position.set(fx-2,1.6,7); g.add(pk);
+  const sx=2, spacing=2.4, pillars=[];
+  WEIGHTS.forEach(([n,w,k],i)=>{
+    const col=k==='v'?C.green:C.aqua; const h=w*.42;
+    const p=new THREE.Mesh(new THREE.BoxGeometry(1.6,h,1.6),glow(col,.7,{transparent:true,opacity:.92})); p.geometry.translate(0,h/2,0);
+    p.position.set(sx+i*spacing,.3,0); p.scale.y=.02; g.add(p);
+    const base=new THREE.Mesh(new THREE.BoxGeometry(2,.3,2),std(0x12425f)); base.position.set(sx+i*spacing,.15,0); g.add(base);
+    const l=label(`${w}%`,{size:.7,accent:hex(col),range:52}); l.position.set(sx+i*spacing,h+1.4,0); g.add(l);
+    const nl=label(n,{size:.48,accent:hex(col),range:42}); nl.position.set(sx+i*spacing,.9,1.9+(i%2)*1.1); g.add(nl);
+    pillars.push({p,l,h});
+  });
+  const scl=label('2 · Score',{size:.95,sub:'seven weighted criteria',accent:'#6cc24a',range:62}); scl.position.set(sx+3*spacing,13.6,0); g.add(scl);
+  const balls=[];
+  for(let i=0;i<10;i++){const m=new THREE.Mesh(new THREE.SphereGeometry(.42,14,10),glow(C.aqua,2)); g.add(m); balls.push({m,u:-i*.12,fail:Math.random()<.45,at:Math.floor(Math.random()*5),a:Math.random()*6});}
+  const reset=(b)=>{b.u=-.2;b.fail=Math.random()<.45;b.at=Math.floor(Math.random()*5);b.m.material.color.set(C.aqua);b.m.material.emissive.set(C.aqua);};
+  updaters.push((t,dt)=>{
+    balls.forEach(b=>{ b.u+=dt*.17; const m=b.m; if(b.u<0){m.visible=false;return;} m.visible=true;
+      const failU=.12+b.at*.16;
+      if(b.fail && b.u>failU){ const k=clamp((b.u-failU)/.35,0,1); const y0=12.2-b.at*2.1;
+        m.position.set(lerp(fx,fx-2,k),lerp(y0,.6,k)+Math.sin(k*Math.PI)*2.5,lerp(0,7,k)); m.material.color.set(C.coral); m.material.emissive.set(C.coral);
+        if(k>=1) reset(b); return; }
+      if(b.u<1){ const y=lerp(13.5,1.8,b.u); const r=lerp(4.6,.3,b.u); m.position.set(fx+Math.cos(b.a+b.u*12)*r,y,Math.sin(b.a+b.u*12)*r); return; }
+      const k=clamp((b.u-1)/.4,0,1); m.position.set(lerp(fx,sx+3*spacing,k),lerp(1.8,.8,k)+Math.sin(k*Math.PI)*1.2,lerp(0,3.2,k)); m.material.color.set(C.green); m.material.emissive.set(C.green);
+      if(k>=1) reset(b); });
+    pillars.forEach(({p,l,h},i)=>{ const tgt=current>=4?1:.02; p.scale.y=lerp(p.scale.y,tgt,dt*(1.2+i*.15)); l.position.y=h*p.scale.y+1.4; });
+  });
+}
+
+/* =====================================================================
+   STOP 6 — RESOURCING & DELIVERY CAPACITY (a work package, end to end)
+   ===================================================================== */
+const CAP={T:30};
+{
+  const R=Z.res, g=new THREE.Group(); g.position.copy(R); scene.add(g);
+  rug(R.x,R.z,44,30,0x123f5c,.4);
+  const hdr=label('Resourcing & delivery capacity',{size:1.05,sub:'one work package, start to finish',accent:'#ffb547',range:80}); hdr.position.set(0,14.5,-6); g.add(hdr);
+
+  // Home desks: "usual roles" (back row)
+  const homeScreen=new THREE.MeshStandardMaterial({color:0x10202c,emissive:C.aqua,emissiveIntensity:.9});
+  const homes=[];
+  for(let k=0;k<8;k++){ const dk=desk(homeScreen,k>=6); dk.position.set(-10.5+k*3,0,-11); dk.rotation.y=Math.PI; g.add(dk); homes.push(V(-10.5+k*3,0,-9.4)); }
+  const hl=label('Business units: usual roles',{size:.62,accent:'#9fb9c6',range:55}); hl.position.set(0,3.4,-12.6); g.add(hl);
+
+  // Layer 2 room (Lab team) in the middle
+  glassRoom(R.x+2,R.z+2,13,10,3.0,C.aqua,{side:0,at:0});
+  const RC=V(2,0,2);
+  const table=new THREE.Mesh(new THREE.CylinderGeometry(2.2,2.2,.18,32),std(0x2b4e66)); table.position.set(RC.x,1,RC.z); g.add(table);
+  const tleg=new THREE.Mesh(new THREE.CylinderGeometry(.4,.6,1,12),std(0x1b4d6b)); tleg.position.set(RC.x,.5,RC.z); g.add(tleg);
+  const charter=new THREE.Mesh(new THREE.BoxGeometry(1.4,.05,1),glow(C.white,.9)); charter.position.set(RC.x,1.12,RC.z); g.add(charter);
+  const prog=new THREE.Mesh(new THREE.TorusGeometry(2.7,.12,8,64,0.001),glow(C.green,2.2)); prog.rotation.x=-Math.PI/2; prog.position.set(RC.x,1.3,RC.z); g.add(prog);
+  const l2=label('Layer 2 · Lab team',{size:.72,sub:'formed around an agreed charter',accent:'#5fd4d0',range:60}); l2.position.set(RC.x,4.6,RC.z+5.6); g.add(l2);
+
+  // Resource manager + approval gate at the room's back door
+  const gate=new THREE.Mesh(new THREE.TorusGeometry(1.5,.12,8,32,Math.PI),glow(C.amber,.8)); gate.position.set(RC.x,0,RC.z-5); g.add(gate);
+  const rm=person(C.amber,1); rm.position.set(RC.x+2.4,0,RC.z-6.2); rm.rotation.y=-.6; g.add(rm);
+  const rml=label('Resource manager',{size:.5,sub:'approves people, effort, dates',accent:'#ffb547',range:44}); rml.position.set(0,2.4,0); rm.add(rml);
+
+  // Layer 1 desk (left)
+  const L1=V(-13,0,3);
+  const l1screen=new THREE.MeshStandardMaterial({color:0x10202c,emissive:C.amber,emissiveIntensity:1});
+  const d1=desk(l1screen,false); d1.position.set(L1.x,0,L1.z); g.add(d1);
+  const lead=person(C.amber,1.2); lead.position.set(L1.x,0,L1.z+1.2); lead.rotation.y=Math.PI; g.add(lead);
+  const lp=[['Platform admin',C.blue],['Assurance partner',C.teal]].map(([n,col],k)=>{ const p=person(col); p.position.set(L1.x-2.8+k*5.6,0,L1.z+1.4); p.rotation.y=Math.PI+(k?-.5:.5); g.add(p); const l=label(n,{size:.45,accent:hex(col),range:40}); l.position.set(0,2.1,0); p.add(l); return p; });
+  const l1l=label('Layer 1 · Program leadership',{size:.72,sub:'Lead + named enabling partners',accent:'#ffb547',range:60}); l1l.position.set(L1.x,4.8,L1.z+1.5); g.add(l1l);
+  const ckpts=[]; for(let k=0;k<3;k++){ const c=new THREE.Mesh(new THREE.BoxGeometry(.6,.6,.08),glow(C.amber,.4)); c.position.set(L1.x-1+k,2.6,L1.z-.6); g.add(c); ckpts.push(c); }
+  // checkpoint beam layer1 -> room
+  const cb=new THREE.Line(new THREE.BufferGeometry().setFromPoints([V(L1.x,2.6,L1.z),V(RC.x,2.4,RC.z)]),new THREE.LineDashedMaterial({color:C.amber,dashSize:.5,gapSize:.35,transparent:true,opacity:.7})); cb.computeLineDistances(); g.add(cb);
+
+  // Layer 3 portal (right)
+  const P3=V(16,0,3);
+  const portal=new THREE.Mesh(new THREE.TorusGeometry(2.2,.22,12,48),glow(C.coral,1.8)); portal.position.set(P3.x,2.4,P3.z); portal.rotation.y=Math.PI/2; g.add(portal);
+  const pfill=new THREE.Mesh(new THREE.CircleGeometry(2.1,40),new THREE.MeshBasicMaterial({color:C.coral,transparent:true,opacity:.18,side:THREE.DoubleSide,depthWrite:false})); pfill.position.copy(portal.position); pfill.rotation.y=Math.PI/2; g.add(pfill);
+  const l3l=label('Layer 3 · Flexible specialist support',{size:.72,sub:'internal or external · costed · time-boxed',accent:'#ff7a6b',range:60}); l3l.position.set(P3.x,6.2,P3.z); g.add(l3l);
+  const spec=person(C.coral,1.05); spec.visible=false; g.add(spec);
+  const sl=label('Specialist',{size:.45,accent:'#ff7a6b',range:40}); sl.position.set(0,2.1,0); spec.add(sl);
+  const know=new THREE.Mesh(new THREE.OctahedronGeometry(.35,0),glow(C.green,3)); know.visible=false; g.add(know);
+  const kl=label('Knowledge transfer',{size:.45,accent:'#6cc24a',range:40}); kl.position.set(0,.9,0); know.add(kl);
+
+  // Team: walks from home desks through the gate to the table, then back
+  const team=[['Business owner',C.green],['SME',C.green],['SME',C.green],['Tech specialist',C.teal],['Data',C.aqua],['Finance',C.blue]];
+  const members=team.map(([n,col],k)=>{ const p=person(col); p.position.copy(homes[k]); g.add(p); const l=label(n,{size:.45,accent:hex(col),range:40}); l.position.set(0,2.1,0); p.add(l);
+    const a=Math.PI*.9 - k/(team.length-1)*Math.PI*.8; const seat=V(RC.x+Math.cos(a)*3.1,0,RC.z-Math.sin(a)*-3.1*-1); seat.z=RC.z+Math.sin(a)*-3.1;
+    return {p,l,home:homes[k].clone(),seat:V(RC.x+Math.cos(a+Math.PI)*3.1,0,RC.z+Math.sin(a+Math.PI)*3.1),door:V(RC.x+(k-2.5)*.35,0,RC.z-5)}; });
+
+  // Capacity agreement card (sprite, redrawn on change)
+  const items=['Outcome & deliverable','Business & delivery owners','Named people & capabilities','Hours / days & dates','Resource-manager approval','Funding source & cost cap','Dependencies & assurance','Displaced work','Support & handover'];
+  const cc=document.createElement('canvas'); cc.width=560; cc.height=720; const cg=cc.getContext('2d');
+  const ctex=new THREE.CanvasTexture(cc); ctex.anisotropy=4;
+  const card=new THREE.Sprite(new THREE.SpriteMaterial({map:ctex,transparent:true,depthWrite:false,opacity:0})); card.scale.set(6.6,8.5,1); card.position.set(RC.x+8.6,6.6,RC.z-4);
+  card.userData.range=70; card.userData.mult=1; card.userData.h=7.2; g.add(card); labels.push(card);
+  const STAT={await:['AWAITING CAPACITY','#ffb547'],commit:['COMMITTED','#6cc24a'],deliver:['IN DELIVERY','#5fd4d0'],hand:['HANDOVER','#5fd4d0'],free:['CAPACITY RELEASED','#9fb9c6']};
+  let lastKey='';
+  function drawCard(ticks,stat,pct){
+    const key=ticks+stat+Math.round(pct*20); if(key===lastKey) return; lastKey=key;
+    const g2=cg; g2.clearRect(0,0,560,720);
+    g2.fillStyle='rgba(6,26,46,0.93)'; roundRect(g2,0,0,560,720,26); g2.fill();
+    g2.strokeStyle='rgba(95,212,208,.5)'; g2.lineWidth=3; roundRect(g2,1.5,1.5,557,717,25); g2.stroke();
+    g2.fillStyle='#5fd4d0'; g2.font='700 22px Inter'; g2.fillText('CAPACITY AGREEMENT',34,52);
+    g2.fillStyle='#eaf6f7'; g2.font='800 34px Inter'; g2.fillText('Work package',34,96);
+    items.forEach((it,i)=>{ const y=146+i*50, on=i<ticks;
+      g2.strokeStyle=on?'#6cc24a':'rgba(159,185,198,.6)'; g2.lineWidth=3; roundRect(g2,34,y-22,30,30,7); g2.stroke();
+      if(on){ g2.fillStyle='#6cc24a'; roundRect(g2,34,y-22,30,30,7); g2.fill(); g2.strokeStyle='#05220f'; g2.lineWidth=4; g2.beginPath(); g2.moveTo(41,y-7); g2.lineTo(48,y); g2.lineTo(58,y-14); g2.stroke(); }
+      g2.fillStyle=on?'#eaf6f7':'#7f9aa8'; g2.font=(on?'600 ':'500 ')+'25px Inter'; g2.fillText(it,80,y); });
+    const [txt,col]=STAT[stat]; g2.font='800 24px Inter'; const tw=g2.measureText(txt).width;
+    g2.fillStyle=col; roundRect(g2,34,610,tw+40,46,23); g2.fill(); g2.fillStyle='#08202e'; g2.fillText(txt,54,642);
+    if(pct>0){ g2.fillStyle='rgba(255,255,255,.12)'; roundRect(g2,34,676,492,14,7); g2.fill(); g2.fillStyle='#6cc24a'; roundRect(g2,34,676,Math.max(14,492*pct),14,7); g2.fill(); }
+    ctex.needsUpdate=true;
+  }
+  const status=label('Awaiting capacity',{size:.7,accent:'#ffb547',range:60}); status.position.set(RC.x,3.6,RC.z-5.6); g.add(status);
+  let lastStat='';
+
+  // Demand vs capacity gauge + executive choices
+  const GZ=V(5,0,11);
+  
+  const capBar=new THREE.Mesh(new THREE.BoxGeometry(.6,.6,.6),glow(C.green,1)); capBar.geometry.translate(0,.5,0); capBar.position.set(GZ.x-1,0,GZ.z+.5); g.add(capBar);
+  const demBar=new THREE.Mesh(new THREE.BoxGeometry(.6,.6,.6),glow(C.coral,1)); demBar.geometry.translate(0,.5,0); demBar.position.set(GZ.x+1,0,GZ.z+.5); g.add(demBar);
+  const gl1=label('Committed capacity',{size:.42,accent:'#6cc24a',range:42}); gl1.position.set(GZ.x-2.6,.6,GZ.z+1.8); g.add(gl1);
+  const gl2=label('Demand',{size:.42,accent:'#ff7a6b',range:42}); gl2.position.set(GZ.x+2.2,.6,GZ.z+1.8); g.add(gl2);
+  const choices=['Reprioritise','Funded support','Reduce scope','Defer'].map((n,i)=>{ const l=label(n,{size:.42,accent:'#ffb547',range:46}); l.position.set(GZ.x+5.2,3.6-i*.9,GZ.z); l.userData.mult=0; g.add(l); return l; });
+  const ql=label('Demand > capacity? Executives choose',{size:.45,accent:'#ffb547',range:46}); ql.position.set(GZ.x+4.2,4.7,GZ.z); ql.userData.mult=0; g.add(ql);
+
+  const walk=(p,a,b,k)=>{ p.position.lerpVectors(a,b,ease(k)); if(k>0&&k<1){ p.position.y=Math.abs(Math.sin(now*7+a.x))*.07; p.rotation.y=Math.atan2(b.x-a.x,b.z-a.z);} };
+  updaters.push((t,dt)=>{
+    const T=CAP.T; const ct = current===5 && stopStart>0 ? ((now-stopStart)%T) : (t%T);
+    // agreement ticks while team assembles
+    const ticks=Math.floor(clamp((ct-2)/0.75,0,9));
+    let stat='await'; if(ct>=9) stat='commit'; if(ct>=10.5) stat='deliver'; if(ct>=19) stat='hand'; if(ct>=21.5) stat='free';
+    const pct=clamp((ct-10.5)/8.5,0,1);
+    drawCard(stat==='free'?9:ticks,stat,pct);
+    if(stat!==lastStat){ lastStat=stat; relabel(status,STAT[stat][0].charAt(0)+STAT[stat][0].slice(1).toLowerCase(),{accent:STAT[stat][1]}); }
+    gate.material.emissiveIntensity=lerp(gate.material.emissiveIntensity,(ct>3&&ct<8.5)||(ct>21.5&&ct<25)?2.6:.6,dt*4);
+    // team movement: home -> door (3..6) -> seat (6..8.5) ... seat -> door (21.5..23) -> home (23..25.5)
+    members.forEach((m,k)=>{ const d=k*.25;
+      m.l.userData.mult=lerp(m.l.userData.mult,(ct>=8.5+d&&ct<21.5)?0:1,dt*4);
+      if(ct<3+d){ m.p.position.copy(m.home); m.p.rotation.y=Math.PI; }
+      else if(ct<6+d) walk(m.p,m.home,m.door,seg(ct,3+d,6+d));
+      else if(ct<8.5+d) walk(m.p,m.door,m.seat,seg(ct,6+d,8.5+d));
+      else if(ct<21.5){ m.p.position.copy(m.seat); m.p.position.y=0; m.p.rotation.y=Math.atan2(RC.x-m.seat.x,RC.z-m.seat.z); }
+      else if(ct<23+d) walk(m.p,m.seat,m.door,seg(ct,21.5,23+d));
+      else if(ct<25.5+d) walk(m.p,m.door,m.home,seg(ct,23+d,25.5+d));
+      else { m.p.position.copy(m.home); m.p.rotation.y=Math.PI; }
+    });
+    // progress ring
+    prog.geometry.dispose(); prog.geometry=new THREE.TorusGeometry(2.7,.12,8,64,Math.max(.001,Math.PI*2*(stat==='deliver'?pct:(stat==='hand'||stat==='free')?1:0)));
+    prog.material.opacity=1; prog.visible=stat!=='await'&&stat!=='commit';
+    // layer 1 checkpoints pulse while delivering
+    ckpts.forEach((c,i)=>c.material.emissiveIntensity=lerp(c.material.emissiveIntensity, stat==='deliver'&&Math.floor(pct*3)>=i?2.4:.4,dt*3));
+    cb.material.opacity=stat==='deliver'?.85:.2;
+    // specialist: portal -> table (11..13.5), works, -> SME handover (17..18), -> portal (18..20)
+    const spot=V(RC.x+3.2,0,RC.z+.4), portalPos=V(P3.x,0,P3.z), smeSeat=members[1].seat;
+    if(ct>=11 && ct<20.5){ spec.visible=true;
+      if(ct<13.5) walk(spec,portalPos,spot,seg(ct,11,13.5));
+      else if(ct<18.2){ spec.position.copy(spot); spec.rotation.y=Math.atan2(RC.x-spot.x,RC.z-spot.z); }
+      else walk(spec,spot,portalPos,seg(ct,18.2,20.5));
+    } else spec.visible=false;
+    if(ct>=16.4 && ct<18.6){ know.visible=true; const k=seg(ct,16.4,18.2); know.position.lerpVectors(V(spot.x,2.2,spot.z),V(smeSeat.x,2.2,smeSeat.z),ease(k)); know.position.y+=Math.sin(k*Math.PI)*1.2; know.rotation.y=t*3; }
+    else know.visible=false;
+    portal.material.emissiveIntensity=lerp(portal.material.emissiveIntensity,(ct>10.6&&ct<13)||(ct>18.4&&ct<20.8)?3.4:1.4,dt*4);
+    pfill.material.opacity=.18+.12*Math.sin(t*3);
+    // demand vs capacity: demand grows past capacity late in the cycle -> choices light up
+    const over=ct>22 && ct<29.5;
+    capBar.scale.y=lerp(capBar.scale.y,3.4,dt*2); demBar.scale.y=lerp(demBar.scale.y,over?5:2.6,dt*1.5);
+    choices.forEach((c,i)=>c.userData.mult=lerp(c.userData.mult,over&&ct>23+i*.5?1:0,dt*4)); ql.userData.mult=lerp(ql.userData.mult,over?1:0,dt*4);
+  });
+}
+
+/* =====================================================================
+   STOP 7 — funding vessels + sourcing signposts
+   ===================================================================== */
+{
+  const g=new THREE.Group(); g.position.copy(Z.fund); scene.add(g);
+  rug(Z.fund.x,Z.fund.z,24,20,0x123f5c,.4);
+  const vx=-5, bx=4;
+  const glass=(r,h)=>new THREE.Mesh(new THREE.CylinderGeometry(r,r,h,32,1,true),new THREE.MeshStandardMaterial({color:0xbfefff,transparent:true,opacity:.14,roughness:.1,metalness:.2,side:THREE.DoubleSide,depthWrite:false}));
+  const s1=glass(1.6,5); s1.position.set(vx,2.5,0); g.add(s1);
+  const cap1=new THREE.Mesh(new THREE.TorusGeometry(1.68,.08,6,40),glow(C.coral,2)); cap1.rotation.x=Math.PI/2; cap1.position.set(vx,3.9,0); g.add(cap1);
+  const capl=label('Cap',{size:.4,accent:'#ff7a6b',range:40}); capl.position.set(vx-2.4,3.9,0); g.add(capl);
+  const liq1=new THREE.Mesh(new THREE.CylinderGeometry(1.5,1.5,1,32),glow(C.green,.9,{transparent:true,opacity:.85})); liq1.geometry.translate(0,.5,0); liq1.position.set(vx,0,0); g.add(liq1);
+  const l1=label('Experimentation',{size:.75,sub:'small · capped · per experiment',accent:'#6cc24a',range:56}); l1.position.set(vx,7,0); g.add(l1);
+  const s2=glass(3.2,10); s2.position.set(bx,5,0); g.add(s2);
+  const liq2=new THREE.Mesh(new THREE.CylinderGeometry(3.05,3.05,1,40),glow(C.amber,.8,{transparent:true,opacity:.8})); liq2.geometry.translate(0,.5,0); liq2.position.set(bx,0,0); g.add(liq2);
+  const l2=label('Implementation',{size:.75,sub:'sized case by case · existing governance',accent:'#ffb547',range:56}); l2.position.set(bx,12,0); g.add(l2);
+  const gate=new THREE.Mesh(new THREE.TorusGeometry(1.1,.12,8,32),glow(C.aqua,2)); gate.position.set((vx+bx)/2,4.6,0); gate.rotation.y=Math.PI/2; g.add(gate);
+  const gl=label('Evidence',{size:.55,accent:'#5fd4d0',range:46}); gl.position.set((vx+bx)/2,6.4,0); g.add(gl);
+  const drops=[]; for(let i=0;i<6;i++){const m=new THREE.Mesh(new THREE.SphereGeometry(.22,10,8),glow(C.green,2.5)); g.add(m); drops.push(m);}
+  // sourcing signposts
+  [['1 Internal allocation','preferred',C.green],['2 Blended','targeted specialist support',C.aqua],['3 Otherwise','reduce scope · sequence · defer',C.coral]].forEach(([n,s,col],i)=>{
+    const x=-8+i*8, z=7.5; const post=new THREE.Mesh(new THREE.CylinderGeometry(.08,.08,2.6,8),std(0xd9eef0)); post.position.set(x,1.3,z); g.add(post);
+    const l=label(n,{size:.52,sub:s,accent:hex(col),range:46}); l.position.set(x,3.1,z); g.add(l); });
+  updaters.push(t=>{
+    const c=(t*.12)%1; liq1.scale.y=lerp(.2,3.7,Math.min(1,c*1.4));
+    liq2.scale.y=lerp(1.2,3.2,(Math.sin(t*.25)+1)/2);
+    drops.forEach((m,i)=>{const u=((t*.35)+i/drops.length)%1; m.position.set(lerp(vx,bx,u),4.6+Math.sin(u*Math.PI)*1.6,0); m.material.color.lerpColors(new THREE.Color(C.green),new THREE.Color(C.amber),u); m.material.emissive.copy(m.material.color);});
+  });
+}
+
+/* =====================================================================
+   STOP 8 — the 90-day road
+   ===================================================================== */
+{
+  const g=new THREE.Group(); g.position.copy(Z.d90); scene.add(g);
+  const L=40, x0=-L/2;
+  const road=new THREE.Mesh(new THREE.BoxGeometry(L+4,.16,3.6),std(0x113a55,{metalness:.3})); road.position.y=.08; g.add(road);
+  for(let i=0;i<=9;i++){const d=new THREE.Mesh(new THREE.BoxGeometry(1.4,.05,.18),glow(C.aqua,1)); d.position.set(x0+i*L/9,.18,0); g.add(d);}
+  const ms=[];
+  [['Days 1–30','Establish',C.aqua],['Days 31–60','Test',C.teal],['Days 61–90','Demonstrate',C.green]].forEach(([d,n,col],i)=>{
+    const x=x0+(i+1)*L/3-4;
+    const a=new THREE.Mesh(new THREE.TorusGeometry(3.2,.25,10,40,Math.PI),glow(col,1.2)); a.position.set(x,.15,0); a.rotation.y=Math.PI/2; g.add(a);
+    const flag=new THREE.Mesh(new THREE.CylinderGeometry(.08,.08,6,8),std(0xd9eef0)); flag.position.set(x,3,-3.4); g.add(flag);
+    const cloth=new THREE.Mesh(new THREE.PlaneGeometry(2,1.2),glow(col,.4,{side:THREE.DoubleSide})); cloth.position.set(x+1.05,5.3,-3.4); g.add(cloth);
+    const l=label(n,{size:.9,sub:d,accent:hex(col),range:58}); l.position.set(x,5.6,0); g.add(l);
+    ms.push({x,a,cloth});
+  });
+  const tp=label('Today',{size:.6,range:46}); tp.position.set(x0-1,1.5,2.6); g.add(tp);
+  const crew=[C.amber,C.green,C.blue,C.teal].map((c,i)=>{const p=person(c,1); g.add(p); return p;});
+  updaters.push((t,dt)=>{
+    const u=((t*.05)%1.15); const x=x0+clamp(u,0,1)*L;
+    crew.forEach((p,i)=>{ p.position.set(x-i*1.1,Math.abs(Math.sin(t*7+i))*.07,(i%2?-.7:.7)); p.rotation.y=Math.PI/2; });
+    ms.forEach(m=>{ const passed=x>m.x; m.a.material.emissiveIntensity=lerp(m.a.material.emissiveIntensity,passed?2.8:.6,dt*3); m.cloth.rotation.y=Math.sin(t*2+m.x)*.25; });
+  });
+}
+
+/* =====================================================================
+   STOP 9 — the boardroom: five decisions
+   ===================================================================== */
+{
+  const g=new THREE.Group(); g.position.copy(Z.ask); scene.add(g);
+  glassRoom(Z.ask.x,Z.ask.z,26,18,3.2,C.amber,{side:1,at:0});
+  const top=new THREE.Mesh(new THREE.BoxGeometry(12,.22,4.2),std(0x2b4e66,{metalness:.3})); top.position.y=1.05; g.add(top);
+  const base=new THREE.Mesh(new THREE.BoxGeometry(10,.95,2.4),std(0x1b4d6b)); base.position.y=.48; g.add(base);
+  const strip=new THREE.Mesh(new THREE.BoxGeometry(11.6,.04,.25),glow(C.amber,1.4)); strip.position.y=1.18; g.add(strip);
+  const execRoles=['Executive sponsor','Strategy executive','Finance executive','Executive','Executive','Executive','Executive','Executive'];
+  execRoles.forEach((n,i)=>{ const side=i<4?-1:1, k=i%4; const x=-4.5+k*3;
+    const ch=new THREE.Mesh(DG.chair,chairMat); ch.position.set(x,.3,side*3); g.add(ch);
+    const p=person(i<3?[C.green,C.teal,C.blue][i]:0x6c8fb5,1,true); p.position.set(x,0,side*3); p.rotation.y=side<0?0:Math.PI; g.add(p);
+    if(i<3){ const l=label(n,{size:.45,accent:hex([C.green,C.teal,C.blue][i]),range:40}); l.position.set(0,2.1,0); p.add(l); } });
+  // display wall at the head
+  const screen=new THREE.Mesh(new THREE.PlaneGeometry(.2,1),glow(C.amber,.6));
+  const wall=new THREE.Mesh(new THREE.BoxGeometry(.3,4.4,7.5),std(0x16405a)); wall.position.set(-11.6,2.2,0); g.add(wall);
+  const disp=new THREE.Mesh(new THREE.PlaneGeometry(6.8,3.6),glow(C.deep,.3)); disp.position.set(-11.4,2.4,0); disp.rotation.y=Math.PI/2; g.add(disp);
+  const lead=person(C.amber,1.2); lead.position.set(-9,0,2.6); lead.rotation.y=Math.PI/2-.3; g.add(lead);
+  const ll=label('Enterprise AI Performance Lead',{size:.5,accent:'#ffb547',range:40}); ll.position.set(0,2.2,0); lead.add(ll);
+  const beam=new THREE.Mesh(new THREE.CylinderGeometry(.4,.4,40,16,1,true),new THREE.MeshBasicMaterial({color:C.amber,transparent:true,opacity:0,depthWrite:false,blending:THREE.AdditiveBlending})); beam.position.y=22; g.add(beam);
+  const al=label('The ask',{size:1.15,sub:'direction & access to people',accent:'#ffb547',range:75}); al.position.set(0,11.6,0); g.add(al);
+  const asks=['Endorse direction','Sponsorship & mandate','Layered resourcing','Experimentation funding proposal','90-day selection approach'].map((n,i)=>{
+    const y=3.4+(4-i)*1.35; const orb=new THREE.Mesh(new THREE.SphereGeometry(.42,16,12),glow(C.amber,.12)); orb.position.set(-4.6,y,0); g.add(orb);
+    const l=label(`${i+1}  ${n}`,{size:.55,accent:'#ffb547',range:50}); l.position.set(-4.6+.9+l.scale.x/2,y,0); g.add(l);
+    return {orb,i,y}; });
+  updaters.push((t,dt)=>{ const on=current===8; beam.material.opacity=lerp(beam.material.opacity,on?.22+.06*Math.sin(t*2):0,dt*2);
+    asks.forEach(({orb,i})=>{ const lit= on && (now-arrivedAt)>1+i*.8 && arrivedAt>0; orb.material.emissiveIntensity=lerp(orb.material.emissiveIntensity,lit?3:.12,dt*3); orb.position.y=asks[i].y+Math.sin(t*1.5+i)*.06; }); });
+}
+
+/* =====================================================================
+   CAMERA STOPS
+   ===================================================================== */
+const off=(p,x,y,z)=>V(p.x+x,p.y+y,p.z+z);
+const CAMS=[
+  {pos:off(Z.org,30,24,40),tgt:off(Z.org,0,5,0)},
+  {pos:off(Z.obj,30,13,2),tgt:off(Z.obj,-1,5,0)},
+  {pos:off(Z.lab,16,22,26),tgt:off(Z.lab,0,1,0)},
+  {pos:off(Z.life,4,25,44),tgt:off(Z.life,4,1,2)},
+  {pos:off(Z.prio,-1,16,37),tgt:off(Z.prio,-1,5.5,0)},
+  {pos:off(Z.res,0,19,35),tgt:off(Z.res,0,2,0)},
+  {pos:off(Z.fund,0,12,28),tgt:off(Z.fund,0,4.5,1)},
+  {pos:off(Z.d90,0,17,34),tgt:off(Z.d90,0,2,0)},
+  {pos:off(Z.ask,3,13,23),tgt:off(Z.ask,-1,5,0)},
+];
+let fly=null; const camTgt=V(0,0,0); camera.lookAt(camTgt);
+let mouse={x:0,y:0}, sm={x:0,y:0};
+const seen=new Set();
+
+function goTo(i){
+  i=clamp(i,0,N-1); if(i===current && fly) return;
+  const from={pos:camera.position.clone(),tgt:camTgt.clone()}, to=CAMS[i];
+  const dist=from.pos.distanceTo(to.pos);
+  fly={from,to,t0:now,dur:clamp(dist/36,1.8,4.2),lift:clamp(dist*.2,4,40)};
+  current=i; seen.add(i); arrivedAt=0; stopStart=now+fly.dur;
+  try{ if(location.hash!=='#stop-'+(i+1)) history.replaceState(null,'','#stop-'+(i+1)); }catch(e){}
+  showPanel(i); updateNav(); narrate(i);
+}
+
+/* =====================================================================
+   NARRATION (browser speech) + captions
+   ===================================================================== */
+const synth=window.speechSynthesis||null;
+const capEl=document.getElementById('caption'), narrBtn=document.getElementById('tNarr'), voiceSel=document.getElementById('voice');
+let narrOn=false, voices=[], voice=null, speakId=0;
+function rankVoice(v){ const n=(v.name+' '+v.lang).toLowerCase(); let s=0;
+  if(/^en/.test(v.lang.toLowerCase())) s+=10; if(/en[-_]au/.test(n)) s+=6; else if(/en[-_]gb/.test(n)) s+=3;
+  if(/natural|neural|online/.test(n)) s+=8; if(/google/.test(n)) s+=4; if(/premium|enhanced/.test(n)) s+=5; return s; }
+function loadVoices(){ if(!synth) return; voices=synth.getVoices().filter(v=>/^en/i.test(v.lang)); voices.sort((a,b)=>rankVoice(b)-rankVoice(a));
+  const keep=voice&&voices.find(v=>v.name===voice.name); voice=keep||voices[0]||null;
+  voiceSel.innerHTML=voices.map((v,i)=>`<option value="${i}" ${voice&&v.name===voice.name?'selected':''}>${v.name.replace(/Microsoft |Google |\(.*\)/g,'').trim()} · ${v.lang}</option>`).join(''); }
+if(synth){ loadVoices(); synth.onvoiceschanged=loadVoices; } else { narrBtn.disabled=true; narrBtn.title='Narration is not supported in this browser'; }
+voiceSel.onchange=()=>{ voice=voices[+voiceSel.value]; if(narrOn&&current>=0) narrate(current); };
+function stopSpeech(){ speakId++; try{synth&&synth.cancel();}catch(e){} capEl.classList.remove('on'); }
+function narrate(i){
+  stopSpeech(); if(!narrOn||!synth||i<0) return;
+  const id=speakId; const parts=STOPS[i].say.match(/[^.!?]+[.!?]+/g)||[STOPS[i].say];
+  let k=0;
+  const next=()=>{ if(id!==speakId) return; if(k>=parts.length){ capEl.classList.remove('on'); return; }
+    const text=parts[k++].trim(); capEl.textContent=text; capEl.classList.add('on');
+    const u=new SpeechSynthesisUtterance(text); if(voice){u.voice=voice;u.lang=voice.lang;} u.rate=1; u.pitch=1;
+    u.onend=()=>setTimeout(next,180); u.onerror=()=>{ if(id===speakId) setTimeout(next,180); };
+    try{ synth.speak(u); }catch(e){} };
+  setTimeout(next,700);
+}
+function setNarr(on){ narrOn=on&&!!synth; narrBtn.classList.toggle('on',narrOn); narrBtn.textContent=(narrOn?'🔊':'🔇')+' Narration'; voiceSel.classList.toggle('on',narrOn&&voices.length>1);
+  if(narrOn){ if(current>=0) narrate(current); } else stopSpeech(); }
+narrBtn.onclick=()=>setNarr(!narrOn);
+addEventListener('beforeunload',stopSpeech);
+
+/* =====================================================================
+   UI
+   ===================================================================== */
+const panel=document.getElementById('panel'), dots=document.getElementById('dots');
+let panelHidden=false;
+STOPS.forEach((s,i)=>{const b=document.createElement('button');b.className='dot';b.innerHTML=`${i+1}<span class="tip">${s.short}</span>`;b.onclick=()=>start(i);dots.appendChild(b);});
+function updateNav(){ [...dots.children].forEach((d,i)=>{d.classList.toggle('on',i===current);d.classList.toggle('seen',seen.has(i));});
+  document.getElementById('prev').disabled=current<=0; document.getElementById('next').disabled=current>=N-1; }
+let panelTimer;
+function showPanel(i){
+  const s=STOPS[i]; panel.classList.add('out'); clearTimeout(panelTimer);
+  panelTimer=setTimeout(()=>{
+    panel.innerHTML=`<div class="kicker"><i>${String(i+1).padStart(2,'0')} / ${String(N).padStart(2,'0')}</i>${s.kicker}</div><h2>${s.title}</h2>${s.html}`;
+    panel.scrollTop=0;
+    if(s.key==='prioritise'){ const b=panel.querySelector('#bars'); b.innerHTML=WEIGHTS.map(([n,w,k])=>`<div class="bar"><span>${n}</span><div class="t"><span class="${k==='f'?'f':''}" data-w="${w}"></span></div><b>${w}%</b></div>`).join('');
+      requestAnimationFrame(()=>requestAnimationFrame(()=>b.querySelectorAll('[data-w]').forEach(e=>e.style.width=(e.dataset.w*4)+'%'))); }
+    if(!panelHidden) panel.classList.remove('hidden'); panel.classList.remove('out');
+  },380);
+}
+function togglePanel(){ panelHidden=!panelHidden; panel.classList.toggle('hidden',panelHidden); document.body.classList.toggle('wide-panel',!panelHidden&&current>=0); }
+function toggleFull(){ try{ if(!document.fullscreenElement) document.documentElement.requestFullscreen().catch(()=>{}); else document.exitFullscreen().catch(()=>{}); }catch(e){} }
+document.getElementById('prev').onclick=()=>goTo(current-1);
+document.getElementById('next').onclick=()=>goTo(current+1);
+document.getElementById('tPanel').onclick=togglePanel;
+document.getElementById('tFull').onclick=toggleFull;
+const intro=document.getElementById('intro');
+function start(n=0){ intro.classList.add('gone'); document.body.classList.toggle('wide-panel',!panelHidden); goTo(n); }
+document.getElementById('go').onclick=()=>start(0);
+document.getElementById('goNarr').onclick=()=>{ setNarr(true); start(0); };
+addEventListener('keydown',e=>{
+  if(e.target&&e.target.tagName==='SELECT') return;
+  if(e.key==='ArrowRight'||e.key===' '||e.key==='PageDown'){e.preventDefault(); current<0?start(0):goTo(current+1);}
+  else if(e.key==='ArrowLeft'||e.key==='PageUp'){e.preventDefault(); if(current>0)goTo(current-1);}
+  else if(/^[1-9]$/.test(e.key)&&+e.key<=N) start(+e.key-1);
+  else if(e.key==='Home') start(0); else if(e.key==='End') start(N-1);
+  else if(e.key==='h'||e.key==='H') togglePanel();
+  else if(e.key==='f'||e.key==='F') toggleFull();
+  else if(e.key==='n'||e.key==='N') setNarr(!narrOn);
+});
+addEventListener('pointermove',e=>{mouse.x=e.clientX/innerWidth-.5; mouse.y=e.clientY/innerHeight-.5;});
+addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);if(composer)composer.setSize(innerWidth,innerHeight);});
+
+function viewOffset(){
+  const wide=innerWidth>820 && !panelHidden && current>=0;
+  if(wide){ const pw=Math.min(470,innerWidth*.4)+26; camera.setViewOffset(innerWidth,innerHeight,pw*.5,0,innerWidth,innerHeight); }
+  else camera.clearViewOffset();
+}
+
+/* =====================================================================
+   LOOP
+   ===================================================================== */
+const clock=new THREE.Clock(); const tmp=new THREE.Vector3();
+function frame(){
+  const dt=Math.min(clock.getDelta(),.05); now=clock.elapsedTime;
+  sm.x=lerp(sm.x,mouse.x,dt*2); sm.y=lerp(sm.y,mouse.y,dt*2);
+  if(fly){
+    const k=clamp((now-fly.t0)/fly.dur,0,1), e=ease(k);
+    camera.position.lerpVectors(fly.from.pos,fly.to.pos,e); camera.position.y+=Math.sin(k*Math.PI)*fly.lift;
+    camTgt.lerpVectors(fly.from.tgt,fly.to.tgt,e);
+    if(k>=1){ fly=null; arrivedAt=now; stopStart=now; }
+  } else if(current>=0){
+    const c=CAMS[current]; const a=Math.sin(now*.12)*.06 + sm.x*.18;
+    tmp.copy(c.pos).sub(c.tgt); const r=Math.hypot(tmp.x,tmp.z), base=Math.atan2(tmp.z,tmp.x);
+    const want=V(c.tgt.x+Math.cos(base+a)*r, c.pos.y - sm.y*4 + Math.sin(now*.3)*.4, c.tgt.z+Math.sin(base+a)*r);
+    camera.position.lerp(want,dt*1.5); camTgt.lerp(c.tgt,dt*2);
+  } else {
+    const a=now*.05; camera.position.set(Math.sin(a)*200,140,Math.cos(a)*200); camTgt.set(0,0,0);
+  }
+  camera.lookAt(camTgt); viewOffset();
+  for(const u of updaters) u(now,dt);
+  for(const s of labels){ s.getWorldPosition(tmp); const d=tmp.distanceTo(camera.position); const r=s.userData.range*1.5;
+    const o=clamp((r-d)/(r*.35),0,1)*(current<0?0:1)*s.userData.mult; s.material.opacity=lerp(s.material.opacity,o,dt*4); s.visible=s.material.opacity>.01; }
+  if(composer) composer.render(); else renderer.render(scene,camera);
+  requestAnimationFrame(frame);
+}
+frame();
+document.getElementById('loading').classList.add('gone');
+const m=location.hash.match(/^#stop-([1-9])$/);
+if(m && +m[1]<=N) start(+m[1]-1);
+window.__world={goTo,get current(){return current},capT:()=>now-stopStart};
+})().catch(e=>{console.error(e);document.getElementById('err').style.display='grid';});
+</script>
+</body>
+</html>
